@@ -454,6 +454,112 @@ main {
   gap: 8px;
 }
 
+.search-panel {
+  display: grid;
+  gap: 16px;
+}
+
+.search-toolbar {
+  display: grid;
+  gap: 12px;
+  border-radius: 24px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(31, 35, 40, 0.1);
+  box-shadow: var(--shadow);
+}
+
+.search-input {
+  width: 100%;
+  border-radius: 18px;
+  border: 1px solid rgba(31, 35, 40, 0.12);
+  padding: 14px 16px;
+  font: inherit;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.search-input:focus {
+  outline: 2px solid rgba(17, 100, 102, 0.24);
+  outline-offset: 2px;
+}
+
+.search-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.search-chip {
+  border: 1px solid rgba(31, 35, 40, 0.12);
+  border-radius: 999px;
+  padding: 9px 13px;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.search-list {
+  display: grid;
+  gap: 12px;
+}
+
+.search-card {
+  border-radius: 20px;
+  padding: 18px 20px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(31, 35, 40, 0.1);
+  box-shadow: var(--shadow);
+}
+
+.search-card p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.card-analysis {
+  margin-top: 12px;
+}
+
+.mini-summary {
+  margin: 0 0 8px 0;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.mini-tasks {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.mini-tasks li {
+  margin-bottom: 6px;
+}
+
+.card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.delete-button {
+  background: linear-gradient(180deg, #ffecec, #ffd6d6);
+  border: 1px solid rgba(200, 50, 50, 0.12);
+  color: #8a1f1f;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.delete-button:hover {
+  transform: translateY(-1px);
+}
+
 .saved-panel {
   display: grid;
   gap: 16px;
@@ -551,6 +657,7 @@ main {
   .feature-grid,
   .flow-grid,
   .example-grid,
+  .search-examples,
   .input-lab,
   .roadmap-grid,
   .metrics {

@@ -23,6 +23,7 @@ const storageKey = "intelliflow-saved-notes";
 
 const deadlinePatterns = ["今日", "明日", "今週", "来週", "今月"];
 const cleanupPatterns = ["進める", "対応する", "実施する", "決める", "確認する", "整理する", "準備する"];
+const searchExamples = ["在庫", "会議", "SNS", "採用"];
 
 type SavedNote = {
   id: string;
@@ -79,6 +80,7 @@ function makeDecision(text: string) {
 export function IntelliFlowInputDemo() {
   const [input, setInput] = useState(sampleText);
   const [submittedText, setSubmittedText] = useState(sampleText);
+  const [searchQuery, setSearchQuery] = useState("会議");
   const [savedNotes, setSavedNotes] = useState<SavedNote[]>(() => {
     if (typeof window === "undefined") {
       return [];
@@ -105,6 +107,18 @@ export function IntelliFlowInputDemo() {
       // 保存に失敗しても画面の動作は継続する
     }
   }, [savedNotes]);
+
+  const searchResults = useMemo(() => {
+    const query = searchQuery.trim();
+
+    if (!query) {
+      return savedNotes.slice(0, 3);
+    }
+
+    const normalizedQuery = query.toLowerCase();
+
+    return savedNotes.filter((note) => note.input.toLowerCase().includes(normalizedQuery));
+  }, [savedNotes, searchQuery]);
 
   const analysis = useMemo(() => {
     const source = submittedText.trim();
@@ -138,6 +152,21 @@ export function IntelliFlowInputDemo() {
       { id: `${savedAt}-${source.slice(0, 12)}`, input: source, savedAt },
       ...current.filter((note) => note.input !== source),
     ]);
+  };
+
+  const analyzeText = (text: string): Analysis => {
+    const source = text.trim();
+
+    return {
+      summary: source.length > 64 ? `${source.slice(0, 64)}...` : source,
+      keyPoints: makeKeyPoints(source),
+      tasks: splitTasks(source),
+      decision: makeDecision(source),
+    };
+  };
+
+  const deleteNote = (id: string) => {
+    setSavedNotes((current) => current.filter((note) => note.id !== id));
   };
 
   return (
@@ -236,6 +265,69 @@ export function IntelliFlowInputDemo() {
         </div>
       </div>
 
+      <div className="search-panel">
+        <div className="section-heading">
+          <p className="section-kicker">2. AI検索</p>
+          <h2>保存したメモから、必要なものだけを探す。</h2>
+        </div>
+
+        <div className="search-toolbar">
+          <label className="input-label" htmlFor="intelliflow-search">
+            検索キーワード
+          </label>
+          <input
+            id="intelliflow-search"
+            className="search-input"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="例: 会議 / 在庫 / SNS"
+          />
+          <div className="search-examples">
+            {searchExamples.map((example) => (
+              <button
+                key={example}
+                type="button"
+                className="search-chip"
+                onClick={() => setSearchQuery(example)}
+              >
+                {example}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {savedNotes.length === 0 ? (
+          <div className="saved-empty">先にメモを保存すると、ここから検索できます。</div>
+        ) : searchResults.length === 0 ? (
+          <div className="saved-empty">「{searchQuery}」に一致する保存メモはありません。</div>
+        ) : (
+          <div className="search-list">
+            {searchResults.map((note) => {
+              const na = analyzeText(note.input);
+              return (
+                <article className="search-card" key={note.id}>
+                  <div className="card-row">
+                    <span>{note.savedAt}</span>
+                    <button className="delete-button" onClick={() => deleteNote(note.id)} aria-label="削除">
+                      削除
+                    </button>
+                  </div>
+                  <p>{note.input}</p>
+                  <div className="card-analysis">
+                    <p className="mini-summary">要約: {na.summary}</p>
+                    <ul className="mini-tasks">
+                      {na.tasks.map((t) => (
+                        <li key={`${note.id}-${t.task}`}>{t.task} <strong>（期限: {t.deadline}）</strong></li>
+                      ))}
+                    </ul>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       <div className="saved-panel">
         <div className="section-heading">
           <p className="section-kicker">3. 保存</p>
@@ -247,8 +339,28 @@ export function IntelliFlowInputDemo() {
           <div className="saved-list">
             {savedNotes.map((note) => (
               <article className="saved-card" key={note.id}>
-                <span>{note.savedAt}</span>
+                <div className="card-row">
+                  <span>{note.savedAt}</span>
+                  <button className="delete-button" onClick={() => deleteNote(note.id)} aria-label="削除">
+                    削除
+                  </button>
+                </div>
                 <p>{note.input}</p>
+                <div className="card-analysis">
+                  {(() => {
+                    const na = analyzeText(note.input);
+                    return (
+                      <>
+                        <p className="mini-summary">要約: {na.summary}</p>
+                        <ul className="mini-tasks">
+                          {na.tasks.map((t) => (
+                            <li key={`${note.id}-s-${t.task}`}>{t.task} <strong>（期限: {t.deadline}）</strong></li>
+                          ))}
+                        </ul>
+                      </>
+                    );
+                  })()}
+                </div>
               </article>
             ))}
           </div>
