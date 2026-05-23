@@ -154,6 +154,10 @@ export function IntelliFlowInputDemo() {
     ]);
   };
 
+  const deleteNote = (id: string) => {
+    setSavedNotes((current) => current.filter((note) => note.id !== id));
+  };
+
   return (
     <section className="section-block" id="input-demo">
       <div className="section-heading">
@@ -288,10 +292,15 @@ export function IntelliFlowInputDemo() {
         ) : (
           <div className="search-list">
             {searchResults.map((note) => (
-              <article className="search-card" key={note.id}>
-                <span>{note.savedAt}</span>
-                <p>{note.input}</p>
-              </article>
+                  <article className="search-card" key={note.id}>
+                    <div className="card-row">
+                      <span>{note.savedAt}</span>
+                      <button className="delete-button" onClick={() => deleteNote(note.id)} aria-label="削除">
+                        削除
+                      </button>
+                    </div>
+                    <p>{note.input}</p>
+                  </article>
             ))}
           </div>
         )}
@@ -308,7 +317,12 @@ export function IntelliFlowInputDemo() {
           <div className="saved-list">
             {savedNotes.map((note) => (
               <article className="saved-card" key={note.id}>
-                <span>{note.savedAt}</span>
+                <div className="card-row">
+                  <span>{note.savedAt}</span>
+                  <button className="delete-button" onClick={() => deleteNote(note.id)} aria-label="削除">
+                    削除
+                  </button>
+                </div>
                 <p>{note.input}</p>
               </article>
             ))}
