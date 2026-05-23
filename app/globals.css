@@ -559,6 +559,29 @@ main {
   margin-bottom: 6px;
 }
 
+.bulk-toolbar {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.pending-banner {
+  background: rgba(255,240,230,0.95);
+  border: 1px solid rgba(220,180,150,0.8);
+  padding: 10px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0 6px;
+}
+
 .card-row {
   display: flex;
   justify-content: space-between;

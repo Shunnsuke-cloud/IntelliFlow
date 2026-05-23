@@ -10,13 +10,25 @@ IntelliFlowは、中小企業や飲食店などの小規模事業者向けに、
 
 IntelliFlowは、こうした「情報はあるのに活用できない状態」をAIで解消し、情報を流れるように整理する仕組みを提供します。
 
+## Supabase setup (recommended)
+
+1. Rotate Service Role Key
+
+- If you exposed the `SUPABASE_SERVICE_ROLE_KEY`, rotate it immediately in the Supabase Project Settings -> API -> Service Role Key.
+
+2. Run SQL migration
+
+- Open Supabase Console -> SQL Editor and run the migration file `supabase-migrations/001_create_notes_and_policies.sql`.
+
+3. Environment
+
+- Keep sensitive keys out of the repository. Store `SUPABASE_SERVICE_ROLE_KEY` locally only in `.env.local` (which is already gitignored).
+
 ## 解決する課題
 
 ### 課題1: 情報の分散
 
 複数ツールに情報が散らばり、検索性が低い。
-
-解決: AIによる一元管理と自動分類。
 
 ### 課題2: 会議内容の未活用
 
@@ -105,3 +117,44 @@ IntelliFlowは、こうした「情報はあるのに活用できない状態」
 | AI | Gemini API |
 | 認証 | Google Authentication |
 | デプロイ | Vercel |
+
+## Backfill と NOT NULL 適用（本番手順）
+
+`owner = auth.uid()` ベースの厳格な RLS を適用する前に、安全なバックフィルと確認を行ってください。
+
+手順（要約）:
+
+1. Supabase のバックアップまたはテーブルコピーを作成します。
+
+```sql
+create table if not exists public.notes_backup as table public.notes;
+```
+
+2. ステージングで `supabase-migrations/002_add_owner_and_strict_rls.sql` を適用して動作検証してください。
+
+3. 本番で既存行を一括で管理者 UID にバックフィルするには、`scripts/backfill_owner.js` を使用します。
+
+環境変数を設定し、まずはドライランで確認します:
+
+```bash
+SUPABASE_URL="https://your-project.supabase.co" \
+SUPABASE_SERVICE_ROLE_KEY="<service_role_key>" \
+ADMIN_UID="<ADMIN_UID_TO_ASSIGN>" \
+node scripts/backfill_owner.js --dry-run
+```
+
+実行する場合（注意: --yes が必要）:
+
+```bash
+SUPABASE_URL="https://your-project.supabase.co" \
+SUPABASE_SERVICE_ROLE_KEY="<service_role_key>" \
+ADMIN_UID="<ADMIN_UID_TO_ASSIGN>" \
+node scripts/backfill_owner.js --yes
+```
+
+NOT NULL に変更する場合は慎重に検証した上で `--set-not-null` を付けて実行するか、SQL エディタで直接実行してください。
+
+注意:
+- `scripts/backfill_owner.js` はサービスロールキーを使用します。キーは安全に管理してください。
+- 本番適用前に必ずバックアップを取得し、保守時間内に実行してください。
+
