@@ -266,7 +266,8 @@ main {
 }
 
 .card-grid,
-.feature-grid {
+.feature-grid,
+.flow-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
@@ -293,6 +294,7 @@ main {
 }
 
 .feature-card span {
+.flow-card span {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -305,9 +307,119 @@ main {
 }
 
 .feature-card h3,
-.info-card h3 {
+.info-card h3,
+.flow-card h3 {
   margin-top: 18px;
   font-size: 1.1rem;
+}
+
+.flow-card {
+  border-radius: 24px;
+  padding: 24px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.62));
+  border: 1px solid rgba(31, 35, 40, 0.1);
+  box-shadow: var(--shadow);
+}
+
+.flow-card span {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+.flow-card p {
+  margin: 0;
+  line-height: 1.8;
+  color: var(--muted);
+}
+
+.input-lab {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 16px;
+}
+
+.input-panel,
+.analysis-panel {
+  border-radius: 24px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.76);
+  border: 1px solid rgba(31, 35, 40, 0.1);
+  box-shadow: var(--shadow);
+}
+
+.input-panel {
+  display: grid;
+  gap: 14px;
+}
+
+.input-label {
+  font-weight: 700;
+  color: var(--text);
+}
+
+.input-panel textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 180px;
+  border-radius: 20px;
+  border: 1px solid rgba(31, 35, 40, 0.12);
+  padding: 16px;
+  font: inherit;
+  line-height: 1.8;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--text);
+}
+
+.input-panel textarea:focus {
+  outline: 2px solid rgba(17, 100, 102, 0.24);
+  outline-offset: 2px;
+}
+
+.input-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.analysis-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.analysis-card {
+  border-radius: 20px;
+  padding: 18px;
+  background: rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(31, 35, 40, 0.08);
+}
+
+.analysis-card span {
+  display: inline-flex;
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.analysis-card p,
+.analysis-card ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.analysis-card strong {
+  color: var(--text);
+}
+
+.analysis-card ul {
+  display: grid;
+  gap: 8px;
 }
 
 .stack-list {
@@ -379,6 +491,8 @@ main {
   .split-block,
   .card-grid,
   .feature-grid,
+  .flow-grid,
+  .input-lab,
   .roadmap-grid,
   .metrics {
     grid-template-columns: 1fr;
