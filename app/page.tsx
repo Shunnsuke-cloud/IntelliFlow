@@ -1,3 +1,5 @@
+import { IntelliFlowInputDemo } from "./components/IntelliFlowInputDemo";
+
 const challengeItems = [
   {
     title: "情報の分散",
@@ -50,6 +52,24 @@ const stackItems = [
   ["デプロイ", "Vercel"],
 ];
 
+const flowSteps = [
+  {
+    label: "入力",
+    title: "来週までに在庫確認とSNS投稿",
+    description: "会議メモや口頭指示をそのまま入力します。",
+  },
+  {
+    label: "AI処理",
+    title: "要約・タスク抽出・責任分担",
+    description: "文章を整理し、実行単位へ変換します。",
+  },
+  {
+    label: "出力",
+    title: "在庫確認 / SNS投稿",
+    description: "期限付きのタスクとしてそのまま動かせます。",
+  },
+];
+
 export default function Home() {
   return (
     <main className="page-shell" id="top">
@@ -59,6 +79,7 @@ export default function Home() {
           <p className="topbar-note">AIで業務の流れを整える小規模事業者向けプラットフォーム</p>
         </div>
         <nav className="topnav" aria-label="ページ内ナビゲーション">
+          <a href="#demo">使い方</a>
           <a href="#challenges">課題</a>
           <a href="#features">機能</a>
           <a href="#stack">技術</a>
@@ -151,6 +172,24 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      <section className="section-block" id="demo">
+        <div className="section-heading">
+          <p className="section-kicker">使い方</p>
+          <h2>入力した文章が、そのまま業務に変わる。</h2>
+        </div>
+        <div className="flow-grid">
+          {flowSteps.map((step) => (
+            <article className="flow-card" key={step.label}>
+              <span>{step.label}</span>
+              <h3>{step.title}</h3>
+              <p>{step.description}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <IntelliFlowInputDemo />
 
       <section className="section-block" id="features">
         <div className="section-heading">
