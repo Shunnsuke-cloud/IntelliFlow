@@ -518,6 +518,26 @@ main {
   line-height: 1.8;
 }
 
+.card-analysis {
+  margin-top: 12px;
+}
+
+.mini-summary {
+  margin: 0 0 8px 0;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.mini-tasks {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.mini-tasks li {
+  margin-bottom: 6px;
+}
+
 .card-row {
   display: flex;
   justify-content: space-between;

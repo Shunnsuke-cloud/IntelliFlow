@@ -154,6 +154,17 @@ export function IntelliFlowInputDemo() {
     ]);
   };
 
+  const analyzeText = (text: string): Analysis => {
+    const source = text.trim();
+
+    return {
+      summary: source.length > 64 ? `${source.slice(0, 64)}...` : source,
+      keyPoints: makeKeyPoints(source),
+      tasks: splitTasks(source),
+      decision: makeDecision(source),
+    };
+  };
+
   const deleteNote = (id: string) => {
     setSavedNotes((current) => current.filter((note) => note.id !== id));
   };
@@ -291,17 +302,28 @@ export function IntelliFlowInputDemo() {
           <div className="saved-empty">「{searchQuery}」に一致する保存メモはありません。</div>
         ) : (
           <div className="search-list">
-            {searchResults.map((note) => (
-                  <article className="search-card" key={note.id}>
-                    <div className="card-row">
-                      <span>{note.savedAt}</span>
-                      <button className="delete-button" onClick={() => deleteNote(note.id)} aria-label="削除">
-                        削除
-                      </button>
-                    </div>
-                    <p>{note.input}</p>
-                  </article>
-            ))}
+            {searchResults.map((note) => {
+              const na = analyzeText(note.input);
+              return (
+                <article className="search-card" key={note.id}>
+                  <div className="card-row">
+                    <span>{note.savedAt}</span>
+                    <button className="delete-button" onClick={() => deleteNote(note.id)} aria-label="削除">
+                      削除
+                    </button>
+                  </div>
+                  <p>{note.input}</p>
+                  <div className="card-analysis">
+                    <p className="mini-summary">要約: {na.summary}</p>
+                    <ul className="mini-tasks">
+                      {na.tasks.map((t) => (
+                        <li key={`${note.id}-${t.task}`}>{t.task} <strong>（期限: {t.deadline}）</strong></li>
+                      ))}
+                    </ul>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </div>
@@ -324,6 +346,21 @@ export function IntelliFlowInputDemo() {
                   </button>
                 </div>
                 <p>{note.input}</p>
+                <div className="card-analysis">
+                  {(() => {
+                    const na = analyzeText(note.input);
+                    return (
+                      <>
+                        <p className="mini-summary">要約: {na.summary}</p>
+                        <ul className="mini-tasks">
+                          {na.tasks.map((t) => (
+                            <li key={`${note.id}-s-${t.task}`}>{t.task} <strong>（期限: {t.deadline}）</strong></li>
+                          ))}
+                        </ul>
+                      </>
+                    );
+                  })()}
+                </div>
               </article>
             ))}
           </div>
