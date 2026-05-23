@@ -19,7 +19,6 @@ const exampleTexts = [
   },
 ];
 
-const storageKey = "intelliflow-saved-notes";
 
 const deadlinePatterns = ["今日", "明日", "今週", "来週", "今月"];
 const cleanupPatterns = ["進める", "対応する", "実施する", "決める", "確認する", "整理する", "準備する"];
@@ -81,32 +80,22 @@ export function IntelliFlowInputDemo() {
   const [input, setInput] = useState(sampleText);
   const [submittedText, setSubmittedText] = useState(sampleText);
   const [searchQuery, setSearchQuery] = useState("会議");
-  const [savedNotes, setSavedNotes] = useState<SavedNote[]>(() => {
-    if (typeof window === "undefined") {
-      return [];
-    }
-
-    try {
-      const stored = window.localStorage.getItem(storageKey);
-
-      if (!stored) {
-        return [];
-      }
-
-      const parsed = JSON.parse(stored) as SavedNote[];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  });
+  const [savedNotes, setSavedNotes] = useState<SavedNote[]>([]);
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(storageKey, JSON.stringify(savedNotes));
-    } catch {
-      // 保存に失敗しても画面の動作は継続する
-    }
-  }, [savedNotes]);
+    const load = async () => {
+      try {
+        const res = await fetch("/api/notes");
+        if (!res.ok) return;
+        const list = (await res.json()) as SavedNote[];
+        setSavedNotes(list);
+      } catch {
+        // フェッチ失敗は無視
+      }
+    };
+
+    load();
+  }, []);
 
   const searchResults = useMemo(() => {
     const query = searchQuery.trim();
@@ -147,11 +136,21 @@ export function IntelliFlowInputDemo() {
       return;
     }
 
-    const savedAt = new Date().toLocaleString("ja-JP");
-    setSavedNotes((current) => [
-      { id: `${savedAt}-${source.slice(0, 12)}`, input: source, savedAt },
-      ...current.filter((note) => note.input !== source),
-    ]);
+    (async () => {
+      try {
+        const res = await fetch("/api/notes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ input: source }),
+        });
+
+        if (!res.ok) return;
+        const created = await res.json();
+        setSavedNotes((current) => [created, ...current.filter((note) => note.input !== source)]);
+      } catch {
+        // 保存失敗は無視
+      }
+    })();
   };
 
   const analyzeText = (text: string): Analysis => {
@@ -166,7 +165,20 @@ export function IntelliFlowInputDemo() {
   };
 
   const deleteNote = (id: string) => {
-    setSavedNotes((current) => current.filter((note) => note.id !== id));
+    (async () => {
+      try {
+        const res = await fetch("/api/notes", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id }),
+        });
+
+        if (!res.ok) return;
+        setSavedNotes((current) => current.filter((note) => note.id !== id));
+      } catch {
+        // 削除失敗は無視
+      }
+    })();
   };
 
   return (
