@@ -70,6 +70,24 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(newNote, { status: 201 });
 }
 
+export async function PUT(req: NextRequest) {
+  const body = await req.json().catch(() => ({}));
+  const id = (body.id || "").toString();
+  const input = (body.input || "").toString().trim();
+
+  if (!id || !input) {
+    return NextResponse.json({ error: "id and input required" }, { status: 400 });
+  }
+
+  const notes = await readNotes();
+  const savedAt = new Date().toLocaleString("ja-JP");
+  const nextNote: SavedNote = { id, input, savedAt };
+  const next = [nextNote, ...notes.filter((n) => n.id !== id)];
+  await writeNotes(next);
+
+  return NextResponse.json(nextNote);
+}
+
 export async function DELETE(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
   const id = (body.id || "").toString();

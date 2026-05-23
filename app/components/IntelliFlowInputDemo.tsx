@@ -80,6 +80,7 @@ export function IntelliFlowInputDemo() {
   const [input, setInput] = useState(sampleText);
   const [submittedText, setSubmittedText] = useState(sampleText);
   const [searchQuery, setSearchQuery] = useState("会議");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [savedNotes, setSavedNotes] = useState<SavedNote[]>([]);
 
   useEffect(() => {
@@ -138,19 +139,33 @@ export function IntelliFlowInputDemo() {
 
     (async () => {
       try {
+        const isEditing = editingNoteId !== null;
         const res = await fetch("/api/notes", {
-          method: "POST",
+          method: isEditing ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ input: source }),
+          body: JSON.stringify(isEditing ? { id: editingNoteId, input: source } : { input: source }),
         });
 
         if (!res.ok) return;
         const created = await res.json();
-        setSavedNotes((current) => [created, ...current.filter((note) => note.input !== source)]);
+        setSavedNotes((current) => {
+          if (isEditing) {
+            return [created, ...current.filter((note) => note.id !== editingNoteId)];
+          }
+
+          return [created, ...current.filter((note) => note.input !== source)];
+        });
+        setEditingNoteId(null);
       } catch {
         // 保存失敗は無視
       }
     })();
+  };
+
+  const openNoteForEdit = (note: SavedNote) => {
+    setInput(note.input);
+    setSubmittedText(note.input);
+    setEditingNoteId(note.id);
   };
 
   const analyzeText = (text: string): Analysis => {
@@ -216,6 +231,7 @@ export function IntelliFlowInputDemo() {
           <label className="input-label" htmlFor="intelliflow-input">
             会議メモ・チャット・業務指示
           </label>
+          {editingNoteId ? <p className="edit-hint">編集中: 保存するとこのメモを上書きします。</p> : null}
           <textarea
             id="intelliflow-input"
             value={input}
@@ -234,12 +250,18 @@ export function IntelliFlowInputDemo() {
               onClick={() => {
                 setInput(sampleText);
                 setSubmittedText(sampleText);
+                setEditingNoteId(null);
               }}
             >
               例文を入れる
             </button>
+            {editingNoteId ? (
+              <button className="secondary-button" type="button" onClick={() => setEditingNoteId(null)}>
+                編集をやめる
+              </button>
+            ) : null}
             <button className="secondary-button" type="button" onClick={saveCurrentNote}>
-              保存する
+              {editingNoteId ? "更新する" : "保存する"}
             </button>
           </div>
         </form>
@@ -317,10 +339,29 @@ export function IntelliFlowInputDemo() {
             {searchResults.map((note) => {
               const na = analyzeText(note.input);
               return (
-                <article className="search-card" key={note.id}>
+                <article
+                  className="search-card"
+                  key={note.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openNoteForEdit(note)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      openNoteForEdit(note);
+                    }
+                  }}
+                >
                   <div className="card-row">
                     <span>{note.savedAt}</span>
-                    <button className="delete-button" onClick={() => deleteNote(note.id)} aria-label="削除">
+                    <button
+                      className="delete-button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        deleteNote(note.id);
+                      }}
+                      aria-label="削除"
+                    >
                       削除
                     </button>
                   </div>
@@ -350,14 +391,34 @@ export function IntelliFlowInputDemo() {
         ) : (
           <div className="saved-list">
             {savedNotes.map((note) => (
-              <article className="saved-card" key={note.id}>
+              <article
+                className="saved-card"
+                key={note.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => openNoteForEdit(note)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    openNoteForEdit(note);
+                  }
+                }}
+              >
                 <div className="card-row">
                   <span>{note.savedAt}</span>
-                  <button className="delete-button" onClick={() => deleteNote(note.id)} aria-label="削除">
+                  <button
+                    className="delete-button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      deleteNote(note.id);
+                    }}
+                    aria-label="削除"
+                  >
                     削除
                   </button>
                 </div>
                 <p>{note.input}</p>
+                {editingNoteId === note.id ? <p className="edit-hint">編集中: このメモを編集して「更新する」で上書きできます。</p> : null}
                 <div className="card-analysis">
                   {(() => {
                     const na = analyzeText(note.input);
