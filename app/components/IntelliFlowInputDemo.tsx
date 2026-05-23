@@ -19,7 +19,6 @@ const exampleTexts = [
   },
 ];
 
-const storageKey = "intelliflow-saved-notes";
 
 const deadlinePatterns = ["今日", "明日", "今週", "来週", "今月"];
 const cleanupPatterns = ["進める", "対応する", "実施する", "決める", "確認する", "整理する", "準備する"];
@@ -81,32 +80,23 @@ export function IntelliFlowInputDemo() {
   const [input, setInput] = useState(sampleText);
   const [submittedText, setSubmittedText] = useState(sampleText);
   const [searchQuery, setSearchQuery] = useState("会議");
-  const [savedNotes, setSavedNotes] = useState<SavedNote[]>(() => {
-    if (typeof window === "undefined") {
-      return [];
-    }
-
-    try {
-      const stored = window.localStorage.getItem(storageKey);
-
-      if (!stored) {
-        return [];
-      }
-
-      const parsed = JSON.parse(stored) as SavedNote[];
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  });
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [savedNotes, setSavedNotes] = useState<SavedNote[]>([]);
 
   useEffect(() => {
-    try {
-      window.localStorage.setItem(storageKey, JSON.stringify(savedNotes));
-    } catch {
-      // 保存に失敗しても画面の動作は継続する
-    }
-  }, [savedNotes]);
+    const load = async () => {
+      try {
+        const res = await fetch("/api/notes");
+        if (!res.ok) return;
+        const list = (await res.json()) as SavedNote[];
+        setSavedNotes(list);
+      } catch {
+        // フェッチ失敗は無視
+      }
+    };
+
+    load();
+  }, []);
 
   const searchResults = useMemo(() => {
     const query = searchQuery.trim();
@@ -147,15 +137,63 @@ export function IntelliFlowInputDemo() {
       return;
     }
 
-    const savedAt = new Date().toLocaleString("ja-JP");
-    setSavedNotes((current) => [
-      { id: `${savedAt}-${source.slice(0, 12)}`, input: source, savedAt },
-      ...current.filter((note) => note.input !== source),
-    ]);
+    (async () => {
+      try {
+        const isEditing = editingNoteId !== null;
+        const res = await fetch("/api/notes", {
+          method: isEditing ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(isEditing ? { id: editingNoteId, input: source } : { input: source }),
+        });
+
+        if (!res.ok) return;
+        const created = await res.json();
+        setSavedNotes((current) => {
+          if (isEditing) {
+            return [created, ...current.filter((note) => note.id !== editingNoteId)];
+          }
+
+          return [created, ...current.filter((note) => note.input !== source)];
+        });
+        setEditingNoteId(null);
+      } catch {
+        // 保存失敗は無視
+      }
+    })();
+  };
+
+  const openNoteForEdit = (note: SavedNote) => {
+    setInput(note.input);
+    setSubmittedText(note.input);
+    setEditingNoteId(note.id);
+  };
+
+  const analyzeText = (text: string): Analysis => {
+    const source = text.trim();
+
+    return {
+      summary: source.length > 64 ? `${source.slice(0, 64)}...` : source,
+      keyPoints: makeKeyPoints(source),
+      tasks: splitTasks(source),
+      decision: makeDecision(source),
+    };
   };
 
   const deleteNote = (id: string) => {
-    setSavedNotes((current) => current.filter((note) => note.id !== id));
+    (async () => {
+      try {
+        const res = await fetch("/api/notes", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id }),
+        });
+
+        if (!res.ok) return;
+        setSavedNotes((current) => current.filter((note) => note.id !== id));
+      } catch {
+        // 削除失敗は無視
+      }
+    })();
   };
 
   return (
@@ -193,6 +231,7 @@ export function IntelliFlowInputDemo() {
           <label className="input-label" htmlFor="intelliflow-input">
             会議メモ・チャット・業務指示
           </label>
+          {editingNoteId ? <p className="edit-hint">編集中: 保存するとこのメモを上書きします。</p> : null}
           <textarea
             id="intelliflow-input"
             value={input}
@@ -211,12 +250,18 @@ export function IntelliFlowInputDemo() {
               onClick={() => {
                 setInput(sampleText);
                 setSubmittedText(sampleText);
+                setEditingNoteId(null);
               }}
             >
               例文を入れる
             </button>
+            {editingNoteId ? (
+              <button className="secondary-button" type="button" onClick={() => setEditingNoteId(null)}>
+                編集をやめる
+              </button>
+            ) : null}
             <button className="secondary-button" type="button" onClick={saveCurrentNote}>
-              保存する
+              {editingNoteId ? "更新する" : "保存する"}
             </button>
           </div>
         </form>
@@ -291,17 +336,47 @@ export function IntelliFlowInputDemo() {
           <div className="saved-empty">「{searchQuery}」に一致する保存メモはありません。</div>
         ) : (
           <div className="search-list">
-            {searchResults.map((note) => (
-                  <article className="search-card" key={note.id}>
-                    <div className="card-row">
-                      <span>{note.savedAt}</span>
-                      <button className="delete-button" onClick={() => deleteNote(note.id)} aria-label="削除">
-                        削除
-                      </button>
-                    </div>
-                    <p>{note.input}</p>
-                  </article>
-            ))}
+            {searchResults.map((note) => {
+              const na = analyzeText(note.input);
+              return (
+                <article
+                  className="search-card"
+                  key={note.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openNoteForEdit(note)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      openNoteForEdit(note);
+                    }
+                  }}
+                >
+                  <div className="card-row">
+                    <span>{note.savedAt}</span>
+                    <button
+                      className="delete-button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        deleteNote(note.id);
+                      }}
+                      aria-label="削除"
+                    >
+                      削除
+                    </button>
+                  </div>
+                  <p>{note.input}</p>
+                  <div className="card-analysis">
+                    <p className="mini-summary">要約: {na.summary}</p>
+                    <ul className="mini-tasks">
+                      {na.tasks.map((t) => (
+                        <li key={`${note.id}-${t.task}`}>{t.task} <strong>（期限: {t.deadline}）</strong></li>
+                      ))}
+                    </ul>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </div>
@@ -316,14 +391,49 @@ export function IntelliFlowInputDemo() {
         ) : (
           <div className="saved-list">
             {savedNotes.map((note) => (
-              <article className="saved-card" key={note.id}>
+              <article
+                className="saved-card"
+                key={note.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => openNoteForEdit(note)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    openNoteForEdit(note);
+                  }
+                }}
+              >
                 <div className="card-row">
                   <span>{note.savedAt}</span>
-                  <button className="delete-button" onClick={() => deleteNote(note.id)} aria-label="削除">
+                  <button
+                    className="delete-button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      deleteNote(note.id);
+                    }}
+                    aria-label="削除"
+                  >
                     削除
                   </button>
                 </div>
                 <p>{note.input}</p>
+                {editingNoteId === note.id ? <p className="edit-hint">編集中: このメモを編集して「更新する」で上書きできます。</p> : null}
+                <div className="card-analysis">
+                  {(() => {
+                    const na = analyzeText(note.input);
+                    return (
+                      <>
+                        <p className="mini-summary">要約: {na.summary}</p>
+                        <ul className="mini-tasks">
+                          {na.tasks.map((t) => (
+                            <li key={`${note.id}-s-${t.task}`}>{t.task} <strong>（期限: {t.deadline}）</strong></li>
+                          ))}
+                        </ul>
+                      </>
+                    );
+                  })()}
+                </div>
               </article>
             ))}
           </div>

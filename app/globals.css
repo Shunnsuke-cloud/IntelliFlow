@@ -518,6 +518,47 @@ main {
   line-height: 1.8;
 }
 
+.saved-card,
+.search-card {
+  cursor: pointer;
+}
+
+.saved-card:focus-visible,
+.search-card:focus-visible {
+  outline: 2px solid rgba(76, 129, 255, 0.8);
+  outline-offset: 4px;
+}
+
+.edit-hint {
+  margin: 10px 0 0;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.input-actions {
+  align-items: center;
+}
+
+.card-analysis {
+  margin-top: 12px;
+}
+
+.mini-summary {
+  margin: 0 0 8px 0;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.mini-tasks {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.mini-tasks li {
+  margin-bottom: 6px;
+}
+
 .card-row {
   display: flex;
   justify-content: space-between;
