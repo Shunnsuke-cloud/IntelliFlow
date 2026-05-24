@@ -1,15 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateText } from "@/lib/gemini";
 import { checkRateLimit } from "@/lib/rateLimiter";
+import { createSupabaseClientWithToken } from "@/lib/notes-store";
 
-function getClientKey(req: NextRequest) {
-  // Prefer Authorization-based key, fall back to forwarded IP
+async function getClientKey(req: NextRequest) {
+  // If Authorization Bearer present, validate token with Supabase and use user id
   const auth = req.headers.get('authorization') || '';
   if (auth.startsWith('Bearer ')) {
-    // use a short fingerprint of the token to avoid storing full secrets
     const token = auth.slice(7);
-    return `user:${token.slice(0, 32)}`;
+    try {
+      const client = createSupabaseClientWithToken(token);
+      if (client) {
+        const { data, error } = await client.auth.getUser();
+        if (!error && data?.user?.id) {
+          return `user:${data.user.id}`;
+        }
+      }
+      // fallback to token fingerprint
+      return `user:token:${token.slice(0, 32)}`;
+    } catch (e) {
+      return `user:token:${token.slice(0, 32)}`;
+    }
   }
+
   const xff = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || '127.0.0.1';
   const ip = xff.split(',')[0].trim();
   return `ip:${ip}`;
@@ -25,7 +38,7 @@ export async function POST(req: NextRequest) {
 
   // rate limit check
   try {
-    const key = getClientKey(req);
+    const key = await getClientKey(req);
     const limit = Number(process.env.GEMINI_RATE_LIMIT_PER_MIN) || undefined;
     const { allowed, remaining, resetSeconds } = checkRateLimit(key, limit);
     if (!allowed) {
