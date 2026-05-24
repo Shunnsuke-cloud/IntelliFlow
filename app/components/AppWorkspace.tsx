@@ -73,11 +73,43 @@ const flowSteps = [
 
 export default function AppWorkspace() {
   return (
-    <main className="page-shell" id="top">
+    <div className="page-shell app-workspace" id="top">
+      <section className="workspace-hero section-card strong-card">
+        <div className="workspace-hero-copy">
+          <p className="section-kicker">Workspace</p>
+          <h1>AIが整理してくれる、業務の入口。</h1>
+          <p className="workspace-lead">
+            メモを貼るだけで、要約・タスク・会議内容がひと目で整理される。NotionやLinearのように、
+            シンプルで業務に集中できる画面を目指しています。
+          </p>
+          <div className="workspace-pills" aria-label="主な操作">
+            <span>要約</span>
+            <span>タスク</span>
+            <span>会議内容</span>
+            <span>保存</span>
+          </div>
+        </div>
+
+        <div className="workspace-stats">
+          <article>
+            <span>AI整理</span>
+            <strong>入力をそのまま構造化</strong>
+          </article>
+          <article>
+            <span>タスク化</span>
+            <strong>実行単位まで変換</strong>
+          </article>
+          <article>
+            <span>検索</span>
+            <strong>あとからすぐ見つかる</strong>
+          </article>
+        </div>
+      </section>
+
       <section className="section-block" id="demo">
         <div className="section-heading">
-          <p className="section-kicker">使い方</p>
-          <h2>入力した文章が、そのまま業務に変わる。</h2>
+          <p className="section-kicker">AI入力</p>
+          <h2>入力欄を大きくして、AIが整理してくれる感を出す。</h2>
         </div>
         <div className="flow-grid">
           {flowSteps.map((step) => (
@@ -92,13 +124,13 @@ export default function AppWorkspace() {
 
       <IntelliFlowInputDemo />
 
-      <section className="section-block" style={{ padding: "24px" }}>
+      <section className="section-block ai-callout" style={{ padding: "24px" }}>
         <div className="section-heading">
-          <p className="section-kicker">AIデモ</p>
-          <h2>Gemini を使ってテキスト生成を試す</h2>
+          <p className="section-kicker">AI補助</p>
+          <h2>必要なときだけ、Gemini に補足を頼む。</h2>
         </div>
 
-        <div style={{ maxWidth: 720 }}>
+        <div style={{ maxWidth: 760 }}>
           <GeminiAction initialPrompt="会議メモから実行可能なタスクを3つ抽出してください。各タスクに簡単な期限案を付けてください。" />
         </div>
       </section>
@@ -175,6 +207,6 @@ export default function AppWorkspace() {
           <h2>PoCに向けた実装を進める準備ができています。</h2>
         </div>
       </footer>
-    </main>
+    </div>
   );
 }

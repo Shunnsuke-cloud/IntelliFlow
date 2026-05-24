@@ -30,20 +30,21 @@ export default function GeminiAction({ initialPrompt = '', onComplete }: Props) 
   }
 
   return (
-    <div style={{ border: '1px solid #e6e6e6', padding: 12, borderRadius: 8 }}>
-      <label style={{ display: 'block', fontSize: 12, marginBottom: 6 }}>Prompt</label>
+    <div className="ai-tool-card">
+      <label className="auth-label">Prompt</label>
       <textarea
+        className="ai-tool-input"
         value={prompt}
         onChange={(e) => setPrompt(e.target.value)}
-        rows={4}
-        style={{ width: '100%', marginBottom: 8 }}
+        rows={7}
       />
 
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={run} disabled={loading || !prompt.trim()}>
+      <div className="auth-actions">
+        <button className="primary-button" onClick={run} disabled={loading || !prompt.trim()}>
           {loading ? '生成中…' : '生成'}
         </button>
         <button
+          className="secondary-button"
           onClick={() => {
             setPrompt('');
             setResult(null);
@@ -54,12 +55,12 @@ export default function GeminiAction({ initialPrompt = '', onComplete }: Props) 
         </button>
       </div>
 
-      {error && <div style={{ color: 'crimson', marginTop: 8 }}>{error}</div>}
+      {error && <div className="ai-tool-error">{error}</div>}
 
       {result && (
-        <div style={{ marginTop: 12 }}>
-          <label style={{ fontSize: 12 }}>Result</label>
-          <pre style={{ whiteSpace: 'pre-wrap', background: '#fafafa', padding: 8 }}>{result}</pre>
+        <div className="ai-tool-result">
+          <label className="auth-label">Result</label>
+          <pre>{result}</pre>
         </div>
       )}
     </div>

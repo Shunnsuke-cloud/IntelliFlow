@@ -89,9 +89,15 @@ export default function AppPage() {
           <p className="eyebrow">IntelliFlow App</p>
           <p className="topbar-note">ログイン後に使う業務本体ページ</p>
         </div>
-        <div style={{ marginLeft: "auto" }}>
-          <SupabaseAuth onSignedOutRedirectTo="/" />
-        </div>
+        {hasSession ? (
+          <div style={{ marginLeft: "auto" }}>
+            <SupabaseAuth onSignedOutRedirectTo="/" />
+          </div>
+        ) : (
+          <a className="secondary-button" href="/">
+            ホームへ戻る
+          </a>
+        )}
       </header>
       {!hasSession ? (
         <div className="section-card">
