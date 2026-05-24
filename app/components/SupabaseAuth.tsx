@@ -115,46 +115,63 @@ export default function SupabaseAuth({ onSignedInRedirectTo, onSignedOutRedirect
   }
 
   return (
-    <div style={{ border: "1px solid #eee", padding: 12, borderRadius: 8, maxWidth: 420 }}>
-          {user ? (
-        <div>
-          <div>Signed in as <strong>{user.email ?? user.id}</strong></div>
-          <div style={{ marginTop: 8 }}>
-            <button onClick={signOut} disabled={loading}>サインアウト</button>
+    <div className="auth-card">
+      {user ? (
+        <div className="auth-signed-in">
+          <div className="auth-signed-in-label">Signed in</div>
+          <div className="auth-signed-in-value">{user.email ?? user.id}</div>
+          <div className="auth-actions">
+            <button className="secondary-button" onClick={signOut} disabled={loading}>
+              サインアウト
+            </button>
           </div>
         </div>
       ) : (
-        <div>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-            <button onClick={() => setView('signin')} disabled={view === 'signin'}>ログイン</button>
-            <button onClick={() => setView('signup')} disabled={view === 'signup'}>新規登録</button>
-            <button onClick={() => setView('magic')} disabled={view === 'magic'}>Magic Link</button>
+        <div className="auth-form-stack">
+          <div className="auth-switcher">
+            <button className={view === 'signin' ? 'auth-switcher-button active' : 'auth-switcher-button'} onClick={() => setView('signin')} disabled={view === 'signin'}>
+              ログイン
+            </button>
+            <button className={view === 'signup' ? 'auth-switcher-button active' : 'auth-switcher-button'} onClick={() => setView('signup')} disabled={view === 'signup'}>
+              新規登録
+            </button>
+            <button className={view === 'magic' ? 'auth-switcher-button active' : 'auth-switcher-button'} onClick={() => setView('magic')} disabled={view === 'magic'}>
+              Magic Link
+            </button>
           </div>
 
           {view === 'signup' ? (
-            <form onSubmit={signUpWithEmail}>
-              <label style={{ display: 'block', fontSize: 12 }}>Email</label>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" style={{ width: '100%' }} />
-              <label style={{ display: 'block', fontSize: 12, marginTop: 8 }}>Password</label>
-              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password" style={{ width: '100%' }} />
-              <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
-                <button type="submit" disabled={loading || !email || !password}>登録</button>
-                <button type="button" onClick={signInWithGoogle} disabled={loading}>Googleでサインイン</button>
+            <form className="auth-form" onSubmit={signUpWithEmail}>
+              <label className="auth-label">Email</label>
+              <input className="auth-input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+              <label className="auth-label">Password</label>
+              <input className="auth-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password" />
+              <div className="auth-actions">
+                <button className="primary-button" type="submit" disabled={loading || !email || !password}>
+                  登録
+                </button>
+                <button className="secondary-button" type="button" onClick={signInWithGoogle} disabled={loading}>
+                  Googleでサインイン
+                </button>
               </div>
             </form>
           ) : (
-            <form onSubmit={signInWithEmail}>
-              <label style={{ display: 'block', fontSize: 12 }}>Email</label>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" style={{ width: '100%' }} />
+            <form className="auth-form" onSubmit={signInWithEmail}>
+              <label className="auth-label">Email</label>
+              <input className="auth-input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
               {view !== 'magic' && (
                 <>
-                  <label style={{ display: 'block', fontSize: 12, marginTop: 8 }}>Password</label>
-                  <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password" style={{ width: '100%' }} />
+                  <label className="auth-label">Password</label>
+                  <input className="auth-input" type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="password" />
                 </>
               )}
-              <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
-                <button type="submit" disabled={loading || !email || (view !== 'magic' && !password)}>{view === 'magic' ? 'Send Magic Link' : 'ログイン'}</button>
-                <button type="button" onClick={signInWithGoogle} disabled={loading}>Googleでサインイン</button>
+              <div className="auth-actions">
+                <button className="primary-button" type="submit" disabled={loading || !email || (view !== 'magic' && !password)}>
+                  {view === 'magic' ? 'Send Magic Link' : 'ログイン'}
+                </button>
+                <button className="secondary-button" type="button" onClick={signInWithGoogle} disabled={loading}>
+                  Googleでサインイン
+                </button>
               </div>
             </form>
           )}
