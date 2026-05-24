@@ -93,8 +93,12 @@ export default function SupabaseAuth({ onSignedInRedirectTo, onSignedOutRedirect
     setLoading(true);
     try {
       if (!supabase) throw new Error('Supabase not configured');
-      const redirectTo =
-        onSignedInRedirectTo ?? (typeof window !== 'undefined' ? window.location.origin : undefined);
+      const redirectTo = (() => {
+        if (typeof window === 'undefined') return undefined;
+        const target = onSignedInRedirectTo ?? '/';
+        if (target.startsWith('http://') || target.startsWith('https://')) return target;
+        return new URL(target, window.location.origin).toString();
+      })();
       await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo } });
     } catch (err: any) {
       alert(String(err));
