@@ -109,7 +109,7 @@ export default function AppWorkspace() {
       <section className="section-block" id="demo">
         <div className="section-heading">
           <p className="section-kicker">AI入力</p>
-          <h2>入力欄を大きくして、AIが整理してくれる感を出す。</h2>
+          <h2>入力欄を大きくして、AIが整理してくれる。</h2>
         </div>
         <div className="flow-grid">
           {flowSteps.map((step) => (
