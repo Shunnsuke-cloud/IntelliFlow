@@ -1,6 +1,9 @@
 export async function generateText(prompt: string, opts?: { temperature?: number; maxOutputTokens?: number }) {
   const key = process.env.GEMINI_API_KEY;
-  if (!key) throw new Error("GEMINI_API_KEY is not set in environment");
+  // Local development fallback: if no key is set, return a mock response so the UI can be tested
+  if (!key) {
+    return `（モック応答）プロンプト: ${prompt}\n\n1) タスクA — 期限: 3日以内\n2) タスクB — 期限: 1週間以内\n3) タスクC — 期限: 今月末`; 
+  }
 
   const url = `https://generativelanguage.googleapis.com/v1/models/text-bison-001:generateText?key=${encodeURIComponent(
     key
