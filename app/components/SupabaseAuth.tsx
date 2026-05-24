@@ -3,7 +3,12 @@
 import React, { useEffect, useState } from "react";
 import supabase from "@/lib/supabaseClient";
 
-export default function SupabaseAuth() {
+type Props = {
+  onSignedInRedirectTo?: string;
+  onSignedOutRedirectTo?: string;
+};
+
+export default function SupabaseAuth({ onSignedInRedirectTo, onSignedOutRedirectTo }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [view, setView] = useState<'signin'|'signup'|'magic'>('signin');
@@ -49,7 +54,10 @@ export default function SupabaseAuth() {
         if (!password) throw new Error('パスワードを入力してください');
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        if (data?.user) setUser(data.user);
+        if (data?.user) {
+          setUser(data.user);
+          if (onSignedInRedirectTo) window.location.href = onSignedInRedirectTo;
+        }
       }
     } catch (err: any) {
       alert(String(err));
@@ -67,7 +75,10 @@ export default function SupabaseAuth() {
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
       alert('登録に成功しました。メールの確認をお願いします（必要な場合）。');
-      if (data?.user) setUser(data.user);
+      if (data?.user) {
+        setUser(data.user);
+        if (onSignedInRedirectTo) window.location.href = onSignedInRedirectTo;
+      }
     } catch (err: any) {
       alert(String(err));
     } finally {
@@ -79,7 +90,8 @@ export default function SupabaseAuth() {
     setLoading(true);
     try {
       if (!supabase) throw new Error('Supabase not configured');
-      const redirectTo = typeof window !== 'undefined' ? window.location.origin : undefined;
+      const redirectTo =
+        onSignedInRedirectTo ?? (typeof window !== 'undefined' ? window.location.origin : undefined);
       await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo } });
     } catch (err: any) {
       alert(String(err));
@@ -93,6 +105,7 @@ export default function SupabaseAuth() {
     try {
       if (!supabase) throw new Error('Supabase not configured');
       await supabase.auth.signOut();
+      if (onSignedOutRedirectTo) window.location.href = onSignedOutRedirectTo;
     } finally {
       setLoading(false);
     }
