@@ -41,6 +41,15 @@ export default function SupabaseAuth({ onSignedInRedirectTo, onSignedOutRedirect
     };
   }, []);
 
+  useEffect(() => {
+    if (!user || !onSignedInRedirectTo) return;
+
+    const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
+    if (currentPath !== onSignedInRedirectTo) {
+      window.location.replace(onSignedInRedirectTo);
+    }
+  }, [user, onSignedInRedirectTo]);
+
   async function signInWithEmail(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -54,10 +63,7 @@ export default function SupabaseAuth({ onSignedInRedirectTo, onSignedOutRedirect
         if (!password) throw new Error('パスワードを入力してください');
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        if (data?.user) {
-          setUser(data.user);
-          if (onSignedInRedirectTo) window.location.href = onSignedInRedirectTo;
-        }
+        if (data?.user) setUser(data.user);
       }
     } catch (err: any) {
       alert(String(err));
@@ -75,10 +81,7 @@ export default function SupabaseAuth({ onSignedInRedirectTo, onSignedOutRedirect
       const { data, error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
       alert('登録に成功しました。メールの確認をお願いします（必要な場合）。');
-      if (data?.user) {
-        setUser(data.user);
-        if (onSignedInRedirectTo) window.location.href = onSignedInRedirectTo;
-      }
+      if (data?.user) setUser(data.user);
     } catch (err: any) {
       alert(String(err));
     } finally {

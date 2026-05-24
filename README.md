@@ -118,6 +118,58 @@ IntelliFlowは、こうした「情報はあるのに活用できない状態」
 | 認証 | Google Authentication |
 | デプロイ | Vercel |
 
+## Vercel へのデプロイ
+
+このリポジトリは Next.js なので、Vercel にそのままデプロイできます。新しいプロジェクトを別途作る必要はありません。GitHub 連携済みなら、Vercel 側でこのリポジトリを Import するだけです。
+
+### 手順
+
+1. Vercel Dashboard を開き、`Add New` -> `Project` を選びます。
+2. GitHub 連携済みのこのリポジトリ `IntelliFlow` を Import します。
+3. Framework は自動で `Next.js` になります。Build Command や Output Directory は基本的に自動設定のままで大丈
+夫です。
+4. 環境変数を Vercel の Project Settings -> Environment Variables に追加します。
+
+### 必要な環境変数
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `GEMINI_API_KEY`
+
+サーバー側で privileged な処理をする場合のみ追加:
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_NOTES_TABLE`
+
+### Supabase / Google OAuth の追加設定
+
+Vercel の本番 URL が決まったら、Supabase Dashboard の Authentication -> URL Configuration で以下を追加してください。
+
+- Site URL: `https://<your-vercel-project>.vercel.app`
+- Redirect URLs: `https://<your-vercel-project>.vercel.app`
+- Redirect URLs: `https://<your-vercel-project>.vercel.app/app`
+
+Google OAuth を使う場合は、Google Cloud Console 側にも Supabase の callback を登録してください。
+
+- `https://pocjzzekfupjqcwdfkan.supabase.co/auth/v1/callback`
+
+### ローカル確認
+
+デプロイ前にローカルで確認する場合は:
+
+```bash
+npm run build
+npm run dev
+```
+
+### 補足
+
+- Vercel にも `.env.local` は持ち込まれないので、必ず Project Settings で環境変数を登録してください。
+- `NEXT_PUBLIC_*` はブラウザに公開されるため、公開してよい値だけを入れてください。
+- Service Role Key は Vercel に入れる場合でも必要最小限の用途に限定してください。
+
 ## Backfill と NOT NULL 適用（本番手順）
 
 `owner = auth.uid()` ベースの厳格な RLS を適用する前に、安全なバックフィルと確認を行ってください。

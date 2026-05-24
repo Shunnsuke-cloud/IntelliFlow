@@ -1,31 +1,41 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import AppWorkspace from "../components/AppWorkspace";
 import SupabaseAuth from "../components/SupabaseAuth";
 import supabase from "@/lib/supabaseClient";
 
 export default function AppPage() {
-  const router = useRouter();
   const [checking, setChecking] = useState(true);
+  const [hasSession, setHasSession] = useState(false);
 
   useEffect(() => {
     let mounted = true;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
     async function checkSession() {
+      const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
       try {
         if (!supabase) {
-          router.replace("/");
           return;
         }
 
         const { data } = await supabase.auth.getSession();
         if (!mounted) return;
 
-        if (!data.session?.user) {
-          router.replace("/");
-          return;
+        const sessionUser = data.session?.user ?? null;
+        setHasSession(Boolean(sessionUser));
+
+        if (!sessionUser) {
+          await sleep(2500);
+          if (!mounted) return;
+
+          const retry = await supabase.auth.getSession();
+          if (!mounted) return;
+
+          const retryUser = retry.data.session?.user ?? null;
+          setHasSession(Boolean(retryUser));
         }
       } finally {
         if (mounted) setChecking(false);
@@ -34,10 +44,32 @@ export default function AppPage() {
 
     checkSession();
 
+    if (supabase) {
+      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (!mounted) return;
+        setHasSession(Boolean(session?.user));
+        setChecking(false);
+      });
+
+      timeoutId = setTimeout(() => {
+        if (!mounted) return;
+        setChecking(false);
+      }, 5000);
+
+      return () => {
+        mounted = false;
+        try {
+          data.subscription.unsubscribe();
+        } catch {}
+        if (timeoutId) clearTimeout(timeoutId);
+      };
+    }
+
     return () => {
       mounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [router]);
+  }, []);
 
   if (checking) {
     return (
@@ -61,7 +93,17 @@ export default function AppPage() {
           <SupabaseAuth onSignedOutRedirectTo="/" />
         </div>
       </header>
-      <AppWorkspace />
+      {!hasSession ? (
+        <div className="section-card">
+          <p className="section-kicker">Session</p>
+          <h2>ログインが必要です。</h2>
+          <p>このページはログイン後に使う作業スペースです。上部のログインから認証してください。</p>
+          <div style={{ marginTop: 12 }}>
+            <SupabaseAuth onSignedInRedirectTo="/app" onSignedOutRedirectTo="/" />
+          </div>
+        </div>
+      ) : null}
+      {hasSession ? <AppWorkspace /> : null}
     </main>
   );
 }
