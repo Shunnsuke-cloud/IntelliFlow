@@ -1,5 +1,6 @@
 import { IntelliFlowInputDemo } from "./components/IntelliFlowInputDemo";
 import GeminiAction from "./components/GeminiAction";
+import SupabaseAuth from "./components/SupabaseAuth";
 
 const challengeItems = [
   {
@@ -86,6 +87,9 @@ export default function Home() {
           <a href="#stack">技術</a>
           <a href="#roadmap">今後</a>
         </nav>
+        <div style={{ marginLeft: 16 }}>
+          <SupabaseAuth />
+        </div>
       </header>
 
       <section className="hero">
