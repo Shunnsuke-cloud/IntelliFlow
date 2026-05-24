@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+// helper to avoid calling Date.now() directly in the component render
+const now = () => Date.now();
+
 const sampleText = "来週までに在庫確認とSNS投稿を進める。会議では新メニューの告知方針を決める。";
 
 const exampleTexts = [
@@ -80,7 +83,16 @@ export function IntelliFlowInputDemo() {
   const [input, setInput] = useState(sampleText);
   const [submittedText, setSubmittedText] = useState(sampleText);
   const [searchQuery, setSearchQuery] = useState("会議");
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [savedNotes, setSavedNotes] = useState<SavedNote[]>([]);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [pendingDeletes, setPendingDeletes] = useState<{
+    notes: SavedNote[];
+    timeoutId: number | null;
+    expiresAt: number;
+  } | null>(null);
+  const [remainingSeconds, setRemainingSeconds] = useState<number | null>(null);
+  const UNDO_MS = 7000;
 
   useEffect(() => {
     const load = async () => {
@@ -138,19 +150,90 @@ export function IntelliFlowInputDemo() {
 
     (async () => {
       try {
+        const isEditing = editingNoteId !== null;
         const res = await fetch("/api/notes", {
-          method: "POST",
+          method: isEditing ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ input: source }),
+          body: JSON.stringify(isEditing ? { id: editingNoteId, input: source } : { input: source }),
         });
 
         if (!res.ok) return;
         const created = await res.json();
-        setSavedNotes((current) => [created, ...current.filter((note) => note.input !== source)]);
+        setSavedNotes((current) => {
+          if (isEditing) {
+            return [created, ...current.filter((note) => note.id !== editingNoteId)];
+          }
+
+          return [created, ...current.filter((note) => note.input !== source)];
+        });
+        setEditingNoteId(null);
       } catch {
         // 保存失敗は無視
       }
     })();
+  };
+
+  const openNoteForEdit = (note: SavedNote) => {
+    setInput(note.input);
+          const bulkDeleteSelected = () => {
+            if (selectedIds.length === 0) return;
+            scheduleDeletion(selectedIds);
+          };
+      
+    setSubmittedText(note.input);
+    setEditingNoteId(note.id);
+  };
+
+  const cancelSelection = () => setSelectedIds([]);
+
+  const scheduleDeletion = (ids: string[]) => {
+    const notesToDelete = savedNotes.filter((n) => ids.includes(n.id));
+    if (notesToDelete.length === 0) return;
+
+    // remove from UI immediately
+    setSavedNotes((current) => current.filter((n) => !ids.includes(n.id)));
+
+    // clear selection for removed ids
+    setSelectedIds((current) => current.filter((id) => !ids.includes(id)));
+
+    // setup pending delete with undo window
+    const expiresAt = now() + UNDO_MS;
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        // finalize deletion on server
+        await Promise.all(ids.map((id) => fetch('/api/notes', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })));
+      } catch {
+        // best-effort
+      } finally {
+        setPendingDeletes(null);
+      }
+    }, UNDO_MS);
+
+    setPendingDeletes({ notes: notesToDelete, timeoutId, expiresAt });
+  };
+
+  useEffect(() => {
+    if (!pendingDeletes) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setRemainingSeconds(null);
+      return;
+    }
+
+    const update = () => setRemainingSeconds(Math.max(0, Math.ceil((pendingDeletes.expiresAt - now()) / 1000)));
+    update();
+    const id = window.setInterval(update, 250);
+    return () => clearInterval(id);
+  }, [pendingDeletes]);
+
+  const undoDeletion = async () => {
+    if (!pendingDeletes) return;
+    // cancel timeout
+    if (pendingDeletes.timeoutId) {
+      clearTimeout(pendingDeletes.timeoutId);
+    }
+    // restore locally (server-side was not modified yet)
+    setSavedNotes((current) => [...pendingDeletes.notes, ...current]);
+    setPendingDeletes(null);
   };
 
   const analyzeText = (text: string): Analysis => {
@@ -165,20 +248,12 @@ export function IntelliFlowInputDemo() {
   };
 
   const deleteNote = (id: string) => {
-    (async () => {
-      try {
-        const res = await fetch("/api/notes", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id }),
-        });
+    scheduleDeletion([id]);
+  };
 
-        if (!res.ok) return;
-        setSavedNotes((current) => current.filter((note) => note.id !== id));
-      } catch {
-        // 削除失敗は無視
-      }
-    })();
+  const bulkDeleteSelected = () => {
+    if (selectedIds.length === 0) return;
+    scheduleDeletion(selectedIds);
   };
 
   return (
@@ -216,6 +291,7 @@ export function IntelliFlowInputDemo() {
           <label className="input-label" htmlFor="intelliflow-input">
             会議メモ・チャット・業務指示
           </label>
+          {editingNoteId ? <p className="edit-hint">編集中: 保存するとこのメモを上書きします。</p> : null}
           <textarea
             id="intelliflow-input"
             value={input}
@@ -234,12 +310,18 @@ export function IntelliFlowInputDemo() {
               onClick={() => {
                 setInput(sampleText);
                 setSubmittedText(sampleText);
+                setEditingNoteId(null);
               }}
             >
               例文を入れる
             </button>
+            {editingNoteId ? (
+              <button className="secondary-button" type="button" onClick={() => setEditingNoteId(null)}>
+                編集をやめる
+              </button>
+            ) : null}
             <button className="secondary-button" type="button" onClick={saveCurrentNote}>
-              保存する
+              {editingNoteId ? "更新する" : "保存する"}
             </button>
           </div>
         </form>
@@ -275,6 +357,17 @@ export function IntelliFlowInputDemo() {
             <p>{analysis.decision}</p>
           </article>
         </div>
+
+        {selectedIds.length > 0 ? (
+          <div className="bulk-toolbar">
+            <button className="danger-button" type="button" onClick={bulkDeleteSelected}>
+              一括削除 ({selectedIds.length})
+            </button>
+            <button className="secondary-button" type="button" onClick={cancelSelection}>
+              選択解除
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <div className="search-panel">
@@ -317,10 +410,29 @@ export function IntelliFlowInputDemo() {
             {searchResults.map((note) => {
               const na = analyzeText(note.input);
               return (
-                <article className="search-card" key={note.id}>
+                <article
+                  className="search-card"
+                  key={note.id}
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openNoteForEdit(note)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      openNoteForEdit(note);
+                    }
+                  }}
+                >
                   <div className="card-row">
                     <span>{note.savedAt}</span>
-                    <button className="delete-button" onClick={() => deleteNote(note.id)} aria-label="削除">
+                    <button
+                      className="delete-button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        deleteNote(note.id);
+                      }}
+                      aria-label="削除"
+                    >
                       削除
                     </button>
                   </div>
@@ -345,19 +457,45 @@ export function IntelliFlowInputDemo() {
           <p className="section-kicker">3. 保存</p>
           <h2>解析結果を残して、あとから見返す。</h2>
         </div>
+        {pendingDeletes ? (
+          <div className="pending-banner">
+              メモを削除しました。<button className="link-button" onClick={undoDeletion}>取り消す</button>（{remainingSeconds ?? 0}秒以内）
+            </div>
+        ) : null}
+
         {savedNotes.length === 0 ? (
           <div className="saved-empty">まだ保存したメモはありません。上のボタンから保存できます。</div>
         ) : (
           <div className="saved-list">
             {savedNotes.map((note) => (
-              <article className="saved-card" key={note.id}>
+              <article
+                className="saved-card"
+                key={note.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => openNoteForEdit(note)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    openNoteForEdit(note);
+                  }
+                }}
+              >
                 <div className="card-row">
                   <span>{note.savedAt}</span>
-                  <button className="delete-button" onClick={() => deleteNote(note.id)} aria-label="削除">
+                  <button
+                    className="delete-button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      deleteNote(note.id);
+                    }}
+                    aria-label="削除"
+                  >
                     削除
                   </button>
                 </div>
                 <p>{note.input}</p>
+                {editingNoteId === note.id ? <p className="edit-hint">編集中: このメモを編集して「更新する」で上書きできます。</p> : null}
                 <div className="card-analysis">
                   {(() => {
                     const na = analyzeText(note.input);

@@ -1,54 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
-
-type SavedNote = {
-  id: string;
-  input: string;
-  savedAt: string;
-};
-
-const dataDir = path.join(process.cwd(), "data");
-const dataFile = path.join(dataDir, "notes.json");
-
-async function ensureFile() {
-  try {
-    await fs.mkdir(dataDir, { recursive: true });
-    await fs.access(dataFile);
-  } catch {
-    await fs.writeFile(dataFile, "[]", "utf8");
-  }
-}
-
-async function readNotes(): Promise<SavedNote[]> {
-  await ensureFile();
-  const raw = await fs.readFile(dataFile, "utf8");
-  try {
-    const parsed = JSON.parse(raw) as SavedNote[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-async function writeNotes(notes: SavedNote[]) {
-  await ensureFile();
-  await fs.writeFile(dataFile, JSON.stringify(notes, null, 2), "utf8");
-}
+import { createNote, getNotes, removeNote, updateNote, createSupabaseClientWithToken } from "@/lib/notes-store";
 
 export async function GET(req: NextRequest) {
   const url = new URL(req.url);
   const q = url.searchParams.get("q") ?? "";
 
-  const notes = await readNotes();
-
-  if (!q) {
-    return NextResponse.json(notes);
-  }
-
-  const normalized = q.toLowerCase();
-  const filtered = notes.filter((n) => n.input.toLowerCase().includes(normalized));
-  return NextResponse.json(filtered);
+  const notes = await getNotes(q);
+  return NextResponse.json(notes);
 }
 
 export async function POST(req: NextRequest) {
@@ -58,16 +16,48 @@ export async function POST(req: NextRequest) {
   if (!input) {
     return NextResponse.json({ error: "input required" }, { status: 400 });
   }
+  // Try to extract user id from Authorization header and create a user-scoped supabase client
+  const authHeader = req.headers.get("authorization") ?? req.headers.get("Authorization");
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
+  const client = token ? createSupabaseClientWithToken(token) : undefined;
+  let owner: string | undefined = undefined;
+  if (client) {
+    try {
+      const userRes = await (client as any).auth.getUser();
+      owner = userRes?.data?.user?.id ?? undefined;
+    } catch {
+      owner = undefined;
+    }
+  }
 
-  const notes = await readNotes();
-  const savedAt = new Date().toLocaleString("ja-JP");
-  const id = `${Date.now()}-${input.slice(0, 12).replace(/\s+/g, "-")}`;
-
-  const newNote: SavedNote = { id, input, savedAt };
-  const next = [newNote, ...notes.filter((n) => n.input !== input)];
-  await writeNotes(next);
-
+  const newNote = await createNote(input, owner, client as any);
   return NextResponse.json(newNote, { status: 201 });
+}
+
+export async function PUT(req: NextRequest) {
+  const body = await req.json().catch(() => ({}));
+  const id = (body.id || "").toString();
+  const input = (body.input || "").toString().trim();
+
+  if (!id || !input) {
+    return NextResponse.json({ error: "id and input required" }, { status: 400 });
+  }
+
+  const authHeader = req.headers.get("authorization") ?? req.headers.get("Authorization");
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
+  const client = token ? createSupabaseClientWithToken(token) : undefined;
+  let owner: string | undefined = undefined;
+  if (client) {
+    try {
+      const userRes = await (client as any).auth.getUser();
+      owner = userRes?.data?.user?.id ?? undefined;
+    } catch {
+      owner = undefined;
+    }
+  }
+
+  const nextNote = await updateNote(id, input, owner, client as any);
+  return NextResponse.json(nextNote);
 }
 
 export async function DELETE(req: NextRequest) {
@@ -77,10 +67,17 @@ export async function DELETE(req: NextRequest) {
   if (!id) {
     return NextResponse.json({ error: "id required" }, { status: 400 });
   }
+  const authHeader = req.headers.get("authorization") ?? req.headers.get("Authorization");
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
+  const client = token ? createSupabaseClientWithToken(token) : undefined;
 
-  const notes = await readNotes();
-  const next = notes.filter((n) => n.id !== id);
-  await writeNotes(next);
+  // Prefer delete via user-scoped client so RLS enforces ownership. If no token, fallback to service-role (notes-store will handle).
+  if (client) {
+    // removeNote currently uses service config; call delete directly via client to ensure RLS
+    await client.from(process.env.SUPABASE_NOTES_TABLE ?? "notes").delete().eq("id", id);
+  } else {
+    await removeNote(id);
+  }
 
   return NextResponse.json({ success: true, id });
 }
