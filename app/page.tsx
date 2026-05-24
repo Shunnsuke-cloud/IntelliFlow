@@ -1,4 +1,5 @@
 import { IntelliFlowInputDemo } from "./components/IntelliFlowInputDemo";
+import GeminiAction from "./components/GeminiAction";
 
 const challengeItems = [
   {
@@ -190,6 +191,17 @@ export default function Home() {
       </section>
 
       <IntelliFlowInputDemo />
+
+      <section className="section-block" style={{ padding: '24px' }}>
+        <div className="section-heading">
+          <p className="section-kicker">AIデモ</p>
+          <h2>Gemini を使ってテキスト生成を試す</h2>
+        </div>
+
+        <div style={{ maxWidth: 720 }}>
+          <GeminiAction initialPrompt="会議メモから実行可能なタスクを3つ抽出してください。各タスクに簡単な期限案を付けてください。" />
+        </div>
+      </section>
 
       <section className="section-block" id="features">
         <div className="section-heading">
