@@ -29,8 +29,8 @@ async function main() {
     console.error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables.");
     process.exit(2);
   }
-  if (!adminUid) {
-    console.error("Missing ADMIN_UID environment variable (the UID to assign to existing rows).");
+  if (!adminUid && !dryRun) {
+    console.error("Missing ADMIN_UID environment variable (the UID to assign to existing rows). Provide ADMIN_UID or run with --dry-run.");
     process.exit(2);
   }
 

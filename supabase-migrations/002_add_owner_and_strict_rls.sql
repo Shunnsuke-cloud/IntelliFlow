@@ -45,5 +45,4 @@ create policy notes_delete_owner on public.notes
 -- - Client applications must set the `owner` field to `auth.user().id` (or equivalent) when inserting.
 -- - Alternatively, perform inserts/updates server-side using the user's JWT or a trusted server
 --   process that enforces owner assignment.
-
--- End of migration
+-- - Never grant broad permissions to the `anon` role in production. Always use RLS policies to restrict access.
