@@ -8,7 +8,12 @@ let supabase: ReturnType<typeof createClient> | null = null;
 if (url && anonKey) {
   try {
     supabase = createClient(url, anonKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true,
+        flowType: "pkce",
+      },
     });
   } catch (e) {
     // If createClient throws in the browser for any reason, fall back to stub to avoid runtime crash

@@ -260,7 +260,7 @@ export function IntelliFlowInputDemo() {
     <section className="section-block" id="input-demo">
       <div className="section-heading">
         <p className="section-kicker">1. 入力例</p>
-        <h2>まずは、現場でよくある文章をそのまま試す。</h2>
+        <h2>AIが整理してくれる前提で、まずは文章をそのまま入れる。</h2>
       </div>
 
       <div className="example-grid">
@@ -297,7 +297,7 @@ export function IntelliFlowInputDemo() {
             value={input}
             onChange={(event) => setInput(event.target.value)}
             placeholder="例: 来週までに在庫確認とSNS投稿を進める。会議では新メニューの告知方針を決める。"
-            rows={8}
+            rows={12}
           />
 
           <div className="input-actions">
