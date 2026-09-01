@@ -52,6 +52,110 @@ body::before {
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.35), transparent 80%);
 }
 
+.app-shell {
+  min-height: 100vh;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.app-header-inner {
+  width: min(1240px, calc(100% - 32px));
+  min-height: 72px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.app-brand {
+  display: grid;
+  gap: 2px;
+  flex: 0 0 auto;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  color: var(--accent-strong);
+}
+
+.app-brand span {
+  font-size: 1.12rem;
+}
+
+.app-brand small {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.app-navigation {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 8px 0;
+  scrollbar-width: thin;
+}
+
+.app-nav-link {
+  flex: 0 0 auto;
+  padding: 9px 12px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+
+.app-nav-link:hover {
+  color: var(--text);
+  background: var(--surface-muted);
+}
+
+.app-nav-link.active {
+  border-color: var(--border-strong);
+  background: linear-gradient(135deg, var(--accent-soft), rgba(37, 99, 235, 0.1));
+  color: var(--accent-strong);
+}
+
+.feature-page {
+  min-height: calc(100vh - 72px);
+  display: grid;
+  place-items: center;
+}
+
+.feature-page-card {
+  width: min(720px, 100%);
+  padding: clamp(28px, 6vw, 52px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.feature-page-card h1 {
+  margin: 0;
+  letter-spacing: -0.04em;
+  font-size: clamp(2rem, 5vw, 3.25rem);
+}
+
+.feature-page-card > p:last-child {
+  margin: 18px 0 0;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -1012,6 +1116,29 @@ main {
 }
 
 @media (max-width: 680px) {
+  .app-header-inner {
+    width: min(100% - 20px, 100%);
+    min-height: 64px;
+    gap: 12px;
+  }
+
+  .app-brand small {
+    display: none;
+  }
+
+  .app-navigation {
+    gap: 4px;
+  }
+
+  .app-nav-link {
+    padding: 8px 10px;
+    font-size: 0.82rem;
+  }
+
+  .feature-page {
+    min-height: calc(100vh - 64px);
+  }
+
   main {
     width: min(100% - 20px, 100%);
     padding: 18px 0 58px;
