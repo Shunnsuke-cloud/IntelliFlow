@@ -18,7 +18,6 @@ export default function SupabaseAuth({ onSignedInRedirectTo, onSignedOutRedirect
   useEffect(() => {
     let mounted = true;
     if (!supabase) {
-      setUser(null);
       return () => {
         mounted = false;
       };

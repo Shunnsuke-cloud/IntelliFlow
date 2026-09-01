@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import AppWorkspace from "../components/AppWorkspace";
 import SupabaseAuth from "../components/SupabaseAuth";
 import supabase from "@/lib/supabaseClient";
@@ -94,9 +95,9 @@ export default function AppPage() {
             <SupabaseAuth onSignedOutRedirectTo="/" />
           </div>
         ) : (
-          <a className="secondary-button" href="/">
+          <Link className="secondary-button" href="/">
             ホームへ戻る
-          </a>
+          </Link>
         )}
       </header>
       {!hasSession ? (
