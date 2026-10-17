@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./app/workspace.css";
+import "../features/work-items/work-items.css";
 
 export const metadata: Metadata = {
   title: "IntelliFlow",
