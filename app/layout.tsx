@@ -6,6 +6,7 @@ import "../features/wiki/wiki.css";
 import '@xyflow/react/dist/style.css';
 import '../features/flow/flow.css';
 import '../features/handoffs/handoffs.css';
+import '../features/ai/ai.css';
 
 export const metadata: Metadata = {
   title: "IntelliFlow",

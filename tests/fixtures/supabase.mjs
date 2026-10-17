@@ -10,7 +10,7 @@ export async function startFixture(port = 0) {
   const db = new PGlite({ extensions: { pg_trgm } });
   const userId = n => `10000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
   const users = [1,2,3].map(n => ({ id: userId(n), email: `user${n}@test.invalid`, aud:'authenticated', role:'authenticated', email_confirmed_at: new Date().toISOString(), app_metadata:{provider:'email'}, user_metadata:{full_name:`テスト利用者 ${n}`}, created_at:new Date().toISOString() }));
-  await db.exec(`create role anon; create role authenticated; create schema auth;
+  await db.exec(`create role anon; create role authenticated; create role service_role bypassrls; create schema auth;
     create table auth.users(id uuid primary key,email text,email_confirmed_at timestamptz,raw_user_meta_data jsonb);
     create function auth.jwt() returns jsonb language sql stable as $$ select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb $$;
     create function auth.uid() returns uuid language sql stable as $$ select (auth.jwt()->>'sub')::uuid $$;
@@ -59,6 +59,9 @@ export async function startFixture(port = 0) {
           const result=await db.query('select public.workspace_command($1,$2::jsonb) as value',[body.operation,JSON.stringify(body.payload)]);
           return send(200,result.rows[0].value);
         }
+        if(url.pathname==='/rest/v1/rpc/ai_status')return send(200,(await db.query('select public.ai_status($1) as value',[body.target_workspace])).rows[0].value);
+        if(url.pathname==='/rest/v1/rpc/ai_command')return send(200,(await db.query('select public.ai_command($1,$2,$3::jsonb) as value',[body.target_workspace,body.operation,JSON.stringify(body.payload)])).rows[0].value);
+        if(url.pathname==='/rest/v1/rpc/ai_context')return send(200,(await db.query('select public.ai_context($1,$2::uuid[],$3,$4::jsonb) as value',[body.target_workspace,body.source_ids,body.intent,JSON.stringify(body.query_filters??{})])).rows[0].value);
         if(url.pathname==='/rest/v1/rpc/work_item_command')return send(200,(await db.query('select public.work_item_command($1,$2,$3::jsonb) as value',[body.target_workspace,body.operation,JSON.stringify(body.payload)])).rows[0].value);
         if(url.pathname==='/rest/v1/rpc/work_items_query')return send(200,(await db.query('select public.work_items_query($1,$2,$3::jsonb) as value',[body.target_workspace,body.collection,JSON.stringify(body.filters)])).rows[0].value);
         if(url.pathname==='/rest/v1/rpc/wiki_command')return send(200,(await db.query('select public.wiki_command($1,$2,$3::jsonb) as value',[body.target_workspace,body.operation,JSON.stringify(body.payload)])).rows[0].value);
@@ -104,6 +107,7 @@ export async function startFixture(port = 0) {
   return {url:`http://127.0.0.1:${server.address().port}`,close:async()=>{await new Promise(resolve=>server.close(resolve));await db.close();}};
 }
 if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href){
-  const fixture=await startFixture(4400);console.log('Local test fixture ready: '+fixture.url);
+  const fixture=await startFixture(4400);console.log('Local test fixture ready: '+fixture.url+' (PID '+process.pid+')');
+  process.stdin.on('data',async chunk=>{if(String(chunk).trim()==='stop'){await fixture.close();process.exit(0);}});
   process.on('SIGINT',async()=>{await fixture.close();process.exit(0);});
 }
