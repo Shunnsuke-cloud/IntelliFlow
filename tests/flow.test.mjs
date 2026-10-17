@@ -113,8 +113,8 @@ test('削除・脱退: アーカイブは指定時のみ表示し、関連線も
  await rpc(1,'workspace_command',['remove',JSON.stringify({workspace_id:ws,user_id:uid(3)})]);
  await assert.rejects(search(3),denied('42501'));
 });
-test('DB構成: invokerビュー、trigramインデックス、未実装Handoffを返さない',async()=>{
+test('DB構成: invokerビュー、trigramインデックス、不正な種類の拒否',async()=>{
  const views=(await db.query("select reloptions from pg_class where relname in ('flow_records','flow_edges')")).rows;assert.equal(views.length,2);assert.ok(views.every(v=>v.reloptions.includes('security_invoker=true')));
  assert.equal((await db.query("select count(*)::int as count from pg_indexes where indexname in ('flow_resources_title','flow_issues_description','flow_projects_description','flow_wiki_pages_body') and indexdef ilike '%gin%'")).rows[0].count,4);
- await assert.rejects(search(4,'search',{kind:'handoff'}),denied('22023'));assert.ok((await search(4)).nodes.every(n=>['issue','project','wiki'].includes(n.kind)));
+ await assert.rejects(search(4,'search',{kind:'unknown'}),denied('22023'));assert.equal((await search(4,'search',{kind:'handoff'})).result_ids.length,0);assert.ok((await search(4)).nodes.every(n=>['issue','project','wiki','handoff'].includes(n.kind)));
 });

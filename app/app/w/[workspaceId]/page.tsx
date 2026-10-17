@@ -7,6 +7,6 @@ export default async function Home({ params }: { params: Promise<{ workspaceId: 
     <div className="if-card"><h2>ワークスペースの管理</h2><p>設定から説明の編集・メンバー招待・権限管理ができます。</p><Link href={`/app/w/${workspace.id}/settings`}>設定を開く →</Link></div>
     <Link className="if-card wiki-home-link" href={`/app/w/${workspace.id}/wiki`}><p className="if-kicker">WIKI</p><h2>資料・手順を共有する</h2><p>マニュアル・議事録・ノウハウを残し、課題やプロジェクトにつなげましょう。</p><span>Wikiを開く →</span></Link>
     <Link className="if-card wiki-home-link" href={`/app/w/${workspace.id}/flow`}><p className="if-kicker">FLOW MAP</p><h2>過去の情報とつながりを探す</h2><p>以前の課題や資料を検索し、関連情報をたどりましょう。</p><span>Flow Mapを開く →</span></Link>
-    <section className="if-card"><span className="if-badge">準備中</span><h2>Handoff — 引き継ぎ</h2><p>今後のフェーズで追加します。</p></section>
+    <Link className="if-card wiki-home-link" href={`/app/w/${workspace.id}/handoffs`}><p className="if-kicker">HANDOFF</p><h2>状況と経緯を、次の担当者へ。</h2><p>課題・資料をまとめて渡し、受領と内容の版を記録します。</p><span>引き継ぎを開く →</span></Link>
   </>;
 }

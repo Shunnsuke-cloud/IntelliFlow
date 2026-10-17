@@ -10,7 +10,7 @@ export function flowFilters(params: URLSearchParams): Record<string, string | nu
     if (!allowed.includes(key) || params.getAll(key).length !== 1) fail();
     if (key === 'collection') continue;
     if (key === 'q') { if (value.length > 200 || value.trim().split(/[\s　]+/).length > 8) fail(); filters.q = value.trim(); }
-    else if (key === 'kind') { if (!['', 'issue', 'project', 'wiki'].includes(value)) fail(); filters.kind = value; }
+    else if (key === 'kind') { if (!['', 'issue', 'project', 'wiki', 'handoff'].includes(value)) fail(); filters.kind = value; }
     else if (['id', 'project'].includes(key)) { if (value) filters[key] = flowId(value); }
     else if (['from', 'to'].includes(key)) { if (value) filters[key] = date(value); }
     else if (key === 'archived') { if (!['true', 'false'].includes(value)) fail(); filters.archived = value === 'true'; }

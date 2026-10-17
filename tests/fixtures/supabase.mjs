@@ -64,6 +64,8 @@ export async function startFixture(port = 0) {
         if(url.pathname==='/rest/v1/rpc/wiki_command')return send(200,(await db.query('select public.wiki_command($1,$2,$3::jsonb) as value',[body.target_workspace,body.operation,JSON.stringify(body.payload)])).rows[0].value);
         if(url.pathname==='/rest/v1/rpc/wiki_query')return send(200,(await db.query('select public.wiki_query($1,$2,$3::jsonb) as value',[body.target_workspace,body.collection,JSON.stringify(body.filters)])).rows[0].value);
         if(url.pathname==='/rest/v1/rpc/flow_query')return send(200,(await db.query('select public.flow_query($1,$2,$3::jsonb) as value',[body.target_workspace,body.collection,JSON.stringify(body.filters)])).rows[0].value);
+        if(url.pathname==='/rest/v1/rpc/handoff_query')return send(200,(await db.query('select public.handoff_query($1,$2,$3::jsonb) as value',[body.target_workspace,body.collection,JSON.stringify(body.filters)])).rows[0].value);
+        if(url.pathname==='/rest/v1/rpc/handoff_command')return send(200,(await db.query('select public.handoff_command($1,$2,$3::jsonb) as value',[body.target_workspace,body.operation,JSON.stringify(body.payload)])).rows[0].value);
         if(url.pathname==='/rest/v1/rpc/flow_relation_command')return send(200,(await db.query('select public.flow_relation_command($1,$2,$3::jsonb) as value',[body.target_workspace,body.operation,JSON.stringify(body.payload)])).rows[0].value);
         if(url.pathname==='/rest/v1/wiki_attachments'){
           const workspace=url.searchParams.get('workspace_id')?.slice(3);const id=url.searchParams.get('id')?.slice(3);

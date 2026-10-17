@@ -9,6 +9,7 @@ import type { WikiDetail, WikiListing, WikiOptions, WikiRelation, WikiSummary } 
 import type { Person } from '@/features/work-items/types';
 import WikiEditor from './WikiEditor';
 import WikiBody from './WikiBody';
+import HandoffLinks from '@/features/handoffs/components/HandoffLinks';
 
 export function WikiTree({ workspaceId, pages, currentId }: { workspaceId: string; pages: WikiSummary[]; currentId?: string }) {
   const known = new Set(pages.map(p => p.id));
@@ -84,5 +85,6 @@ export function WikiDetailView({ workspaceId, detail, options, people, role, use
     <section className="wiki-reading"><WikiBody document={page.body_doc} workspaceId={workspaceId} /></section>
     <section className="work-panel"><h2>関連情報</h2>{detail.relations.length ? <ul className="work-relations">{detail.relations.map(target => <li key={target.id}><Link href={`${root}/${target.kind === 'issue' ? 'issues' : 'projects'}/${target.id}`}>{target.kind === 'issue' ? 'Issue（課題）' : 'Project'}：{target.title}{target.archived_at && '（削除済み）'}</Link></li>)}</ul> : <p>関連する課題・プロジェクトはまだありません。</p>}</section>
     <section className="work-panel"><h2>更新履歴・過去バージョン</h2><p className="work-subtle">最近の100版を表示します。版は削除せず保持しています。</p><ol className="wiki-revisions">{detail.revisions.map(rev => <li key={rev.id}><Link href={`${root}/wiki/${page.id}/history/${rev.revision}`}>第{rev.revision}版 — {rev.title}</Link><span>{people.find(p => p.user_id === rev.edited_by)?.display_name ?? '脱退済みメンバー'} · {new Date(rev.created_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })} · {rev.metadata.action === 'archive' ? '削除' : rev.metadata.action === 'restore' ? '復元' : rev.metadata.status === 'draft' ? '下書き' : '共有'}</span></li>)}</ol></section>
+    <HandoffLinks key={page.id} workspaceId={workspaceId} resourceId={page.id} />
   </article></div>{confirm && <Modal title="ページを削除しますか？" onClose={() => { if (!busy) setConfirm(false); }}><p>通常の一覧から外します。子ページ・関連先・過去の版・添付画像は残し、削除済み一覧から復元できます。</p>{error && <p role="alert">{error}</p>}<Button disabled={busy} onClick={() => archive('archive')}>{busy ? '削除中…' : '削除する'}</Button></Modal>}</>;
 }

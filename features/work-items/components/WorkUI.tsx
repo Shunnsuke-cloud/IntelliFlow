@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Button, Field, Modal } from '@/components/ui/controls';
 import { canManage, type WorkspaceRole } from '@/lib/auth/policy';
 import type { WikiSummary } from '@/features/wiki/types';
+import HandoffLinks from '@/features/handoffs/components/HandoffLinks';
 import {
   issueStatuses, projectStatuses, priorities, progress, issueStatusLabel,
   type Issue, type Project, type WorkKind, type Person, type Options, type Listing, type Detail, type ItemComment, type WorkEvent,
@@ -188,6 +189,7 @@ export function WorkDetail({ kind, detail, workspaceId, people, options, role, u
       </section>}
     <section className="work-panel"><h2>更新履歴</h2><p className="work-subtle">最近の100件を表示。削除後も履歴は残ります。</p>{detail.events.length ? <ol className="work-history">{detail.events.map(event => <li key={event.id}><div><strong>{eventLabels[event.action] ?? event.action}</strong><span>{personName(people, event.actor_id)} · {new Date(event.created_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}</span></div><HistoryChanges event={event} people={people} options={options} root={root} /></li>)}</ol> : <p>更新履歴はまだありません。</p>}</section>
     <section className="work-panel"><h2>関連するWiki</h2>{wikiError ? <p role="alert">関連Wikiを取得できませんでした。接続・Wiki設定を確認してください。</p> : relatedWiki?.length ? <ul className="work-relations">{relatedWiki.map(page => <li key={page.id}><Link href={`${root}/wiki/${page.id}`}>{page.title}</Link><span className="if-badge">{page.category}</span></li>)}</ul> : <p>関連するWikiはまだありません。</p>}</section>
+    <HandoffLinks key={item.id} workspaceId={workspaceId} resourceId={item.id} canCreate={writable} />
     {editing && <WorkEditor kind={kind} workspaceId={workspaceId} people={people} options={options} item={item} onClose={() => setEditing(false)} />}
     {addingIssue && <WorkEditor kind="issue" workspaceId={workspaceId} people={people} options={options} defaultProject={item.id} onClose={() => setAddingIssue(false)} />}
     {deleting && <Modal title="削除しますか？" onClose={() => { if (!mutation.busy) setDeleting(false); }}><p>「{item.title}」を通常の一覧から外します。履歴{kind === 'project' ? 'と関連する課題' : 'とコメント'}は残り、削除済み一覧から復元できます。</p><Feedback error={mutation.error} /><Button disabled={mutation.busy} onClick={async () => { if (await run('archive')) { setDeleting(false); router.push(`${root}/${kind === 'issue' ? 'issues' : 'projects'}`); } }}>{mutation.busy ? '削除中…' : '削除する'}</Button></Modal>}

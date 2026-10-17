@@ -9,6 +9,8 @@ export type Database = { public: {
   Tables: { workspaces: Table<Workspace>; workspace_members: Table<Member>; notes: { Row: LegacyNote; Insert: Pick<LegacyNote, 'id' | 'input' | 'owner'>; Update: { input?: string }; Relationships: [] } };
   Views: Record<string, never>;
   Functions: {
+    handoff_query: { Args: { target_workspace: string; collection: string; filters: Json }; Returns: Json };
+    handoff_command: { Args: { target_workspace: string; operation: string; payload: Json }; Returns: Json };
     flow_query: { Args: { target_workspace: string; collection: string; filters: Json }; Returns: Json };
     flow_relation_command: { Args: { target_workspace: string; operation: string; payload: Json }; Returns: Json };
     workspace_command: { Args: { operation: string; payload: Json }; Returns: Json };
