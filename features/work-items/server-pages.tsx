@@ -3,6 +3,8 @@ import { notFound } from 'next/navigation';
 import { workspaceDetail } from '@/lib/workspaces';
 import { queryItems } from '@/lib/work-items';
 import { HttpError } from '@/lib/auth/server';
+import { wikiQuery } from '@/lib/wiki';
+import type { WikiSummary } from '@/features/wiki/types';
 import { State } from '@/components/ui/controls';
 import { WorkList, WorkDetail } from './components/WorkUI';
 import { InputError, uuid, validateFilters } from './validation';
@@ -36,6 +38,8 @@ export async function workDetailPage(kind: WorkKind, workspaceId: string, id: st
   try {
     const detail = await queryItems<Detail<Issue | Project>>(context.client, workspaceId, 'detail', { id, kind });
     const related = kind === 'project' ? await queryItems<Listing<Issue>>(context.client, workspaceId, 'issues', { project: id, limit: 100, sort: 'number' }) : undefined;
-    return <WorkDetail kind={kind} workspaceId={workspaceId} detail={detail} relatedIssues={related} role={context.role} userId={context.user.id} people={context.people} options={context.options} />;
+    let relatedWiki: WikiSummary[] = []; let wikiError = false;
+    try { relatedWiki = await wikiQuery(context.client, workspaceId, 'backlinks', { id }); } catch { wikiError = true; }
+    return <WorkDetail kind={kind} workspaceId={workspaceId} detail={detail} relatedIssues={related} relatedWiki={relatedWiki} wikiError={wikiError} role={context.role} userId={context.user.id} people={context.people} options={context.options} />;
   } catch (error) { if (error instanceof HttpError && error.status === 404) notFound(); throw error; }
 }

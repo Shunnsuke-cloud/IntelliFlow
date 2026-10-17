@@ -14,6 +14,8 @@ export type Database = { public: {
     workspace_pending_invitations: { Args: { target_workspace: string }; Returns: Invitation[] };
     work_items_query: { Args: { target_workspace: string; collection: string; filters: Json }; Returns: Json };
     work_item_command: { Args: { target_workspace: string; operation: string; payload: Json }; Returns: Json };
+    wiki_query: { Args: { target_workspace: string; collection: string; filters: Json }; Returns: Json };
+    wiki_command: { Args: { target_workspace: string; operation: string; payload: Json }; Returns: Json };
   };
   Enums: Record<string, never>; CompositeTypes: Record<string, never>;
 } };

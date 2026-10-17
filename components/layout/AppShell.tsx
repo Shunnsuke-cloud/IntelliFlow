@@ -35,7 +35,7 @@ export default function AppShell({ children, workspaces, email }: { children: Re
       <label className="if-field"><span>ワークスペース</span><select value={selected} onChange={e => { setMobile(false); router.push(e.target.value ? `/app/w/${e.target.value}` : '/app'); }}><option value="">一覧・新しく作成</option>{workspaces.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}</select></label>
       <nav aria-label="メインナビゲーション">{items.map(([slug, label, ja]) => {
         const href = selected ? `/app/w/${selected}${slug ? `/${slug}` : ''}` : '/app';
-        return <Link key={label} href={href} aria-current={path === href || (!!slug && path.startsWith(href + '/')) ? 'page' : undefined} onClick={() => setMobile(false)}><span>{label}<small>{ja}</small></span>{['wiki', 'flow', 'handoffs'].includes(slug) && <em>準備中</em>}</Link>;
+        return <Link key={label} href={href} aria-current={path === href || (!!slug && path.startsWith(href + '/')) ? 'page' : undefined} onClick={() => setMobile(false)}><span>{label}<small>{ja}</small></span>{['flow', 'handoffs'].includes(slug) && <em>準備中</em>}</Link>;
       })}</nav>
       <Link href="/app/notes" onClick={() => setMobile(false)}>旧ノートを開く</Link>
     </aside>

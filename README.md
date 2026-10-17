@@ -1,16 +1,21 @@
 # IntelliFlow
 
+## Phase 4: Wiki
+
+文章エディタ、ページ階層、検索・カテゴリ、画像添付、更新履歴・過去版表示、Issues / ProjectsとのIDによる関連付けを追加しました。
+変更ファイル・権限・DB / Storage設定・検証結果は [Phase 4ガイド](docs/phase4.md) を参照してください。本番DBへの適用・デプロイは未実施です。Flow Map / Handoff / AIの新規実装はまだありません。
+
 ## Phase 3: Issues / Projects
 
 Issue（課題）のCRUD・担当/期限/状態/ラベル・コメント・関連付け・検索・履歴と、ProjectsのCRUD・メンバー/日程・実課題に基づく進捗・一覧/カンバンを追加しました。
 設定・権限・変更ファイル・マイグレーションは [Phase 3ガイド](docs/phase3.md) を参照してください。削除は復元可能なアーカイブです。本番DBへの適用・デプロイは未実施です。
-Wiki / Flow Map / Handoff / AIの新規実装はまだありません。
+Phase 3時点ではWiki / Flow Map / Handoff / AIの新規実装はありません。Wikiの現在の状態は上記Phase 4を参照してください。
 
 ## Phase 2: 認証・ワークスペース基盤
 
 新しいコンセプトは **IntelliFlow — 情報をつなぎ、次の人へ。** です。
 認証、個人/チーム用ワークスペース、招待と4段階の権限、共通UIを追加しました。
-Phase 2時点ではIssues / Projects / Wiki / Flow Map / Handoffの業務機能は準備中です。Issues / Projectsの現在の状態は上記Phase 3を参照してください。
+Phase 2時点ではIssues / Projects / Wiki / Flow Map / Handoffの業務機能は準備中です。現在の状態は上記Phase 3・4を参照してください。
 
 **現在の設定・DB適用手順は [Phase 2実装・検証・設定ガイド](docs/phase2.md) を参照してください。**
 下記の旧説明は試作時の記録です。特に旧002マイグレーションの再実行、公開スキーマへのバックアップコピー、所有者の一括割当、旧Gemini仕様はそのまま使用しないでください。本番DBへの適用・デプロイは個別の承認後に行います。
