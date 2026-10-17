@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button, Field, Modal } from '@/components/ui/controls';
 import { canManage, type WorkspaceRole } from '@/lib/auth/policy';
+import type { WikiSummary } from '@/features/wiki/types';
 import {
   issueStatuses, projectStatuses, priorities, progress, issueStatusLabel,
   type Issue, type Project, type WorkKind, type Person, type Options, type Listing, type Detail, type ItemComment, type WorkEvent,
@@ -144,8 +145,8 @@ function HistoryChanges({ event, people, options, root }: { event: WorkEvent; pe
   const changed = Object.entries(fieldLabels).filter(([field]) => JSON.stringify(event.before_data?.[field]) !== JSON.stringify(event.after_data?.[field]));
   return changed.length ? <details><summary>{changed.map(([, label]) => label).join('・')}</summary><dl className="work-history-changes">{changed.map(([field, label]) => <div key={field}><dt>{label}</dt><dd>{event.before_data && <><span>{readable(field, event.before_data[field])}</span><b aria-label="から"> → </b></>}{readable(field, event.after_data?.[field])}</dd></div>)}</dl></details> : null;
 }
-export function WorkDetail({ kind, detail, workspaceId, people, options, role, userId, relatedIssues }: {
-  kind: WorkKind; detail: Detail<Item>; workspaceId: string; people: Person[]; options: Options; role: WorkspaceRole; userId: string; relatedIssues?: Listing<Issue>;
+export function WorkDetail({ kind, detail, workspaceId, people, options, role, userId, relatedIssues, relatedWiki, wikiError }: {
+  kind: WorkKind; detail: Detail<Item>; workspaceId: string; people: Person[]; options: Options; role: WorkspaceRole; userId: string; relatedIssues?: Listing<Issue>; relatedWiki?: WikiSummary[]; wikiError?: boolean;
 }) {
   const item = detail.item; const mutation = useCommand(workspaceId); const router = useRouter();
   const [editing, setEditing] = useState(false); const [deleting, setDeleting] = useState(false); const [addingIssue, setAddingIssue] = useState(false);
@@ -186,6 +187,7 @@ export function WorkDetail({ kind, detail, workspaceId, people, options, role, u
         {relatedIssues && relatedIssues.total > relatedIssues.items.length && <p>先頭{relatedIssues.items.length}件を表示しています。<Link href={`${root}/issues?project=${item.id}`}>すべての関連課題を見る（{relatedIssues.total}件）</Link></p>}
       </section>}
     <section className="work-panel"><h2>更新履歴</h2><p className="work-subtle">最近の100件を表示。削除後も履歴は残ります。</p>{detail.events.length ? <ol className="work-history">{detail.events.map(event => <li key={event.id}><div><strong>{eventLabels[event.action] ?? event.action}</strong><span>{personName(people, event.actor_id)} · {new Date(event.created_at).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' })}</span></div><HistoryChanges event={event} people={people} options={options} root={root} /></li>)}</ol> : <p>更新履歴はまだありません。</p>}</section>
+    <section className="work-panel"><h2>関連するWiki</h2>{wikiError ? <p role="alert">関連Wikiを取得できませんでした。接続・Wiki設定を確認してください。</p> : relatedWiki?.length ? <ul className="work-relations">{relatedWiki.map(page => <li key={page.id}><Link href={`${root}/wiki/${page.id}`}>{page.title}</Link><span className="if-badge">{page.category}</span></li>)}</ul> : <p>関連するWikiはまだありません。</p>}</section>
     {editing && <WorkEditor kind={kind} workspaceId={workspaceId} people={people} options={options} item={item} onClose={() => setEditing(false)} />}
     {addingIssue && <WorkEditor kind="issue" workspaceId={workspaceId} people={people} options={options} defaultProject={item.id} onClose={() => setAddingIssue(false)} />}
     {deleting && <Modal title="削除しますか？" onClose={() => { if (!mutation.busy) setDeleting(false); }}><p>「{item.title}」を通常の一覧から外します。履歴{kind === 'project' ? 'と関連する課題' : 'とコメント'}は残り、削除済み一覧から復元できます。</p><Feedback error={mutation.error} /><Button disabled={mutation.busy} onClick={async () => { if (await run('archive')) { setDeleting(false); router.push(`${root}/${kind === 'issue' ? 'issues' : 'projects'}`); } }}>{mutation.busy ? '削除中…' : '削除する'}</Button></Modal>}

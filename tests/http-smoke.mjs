@@ -33,6 +33,19 @@ d=await items('detail',{kind:'issue',id:issue});assert.equal(d.comments[0].body,
 for(const path of [`/issues`,`/issues/${issue}`,`/projects?view=kanban`,`/projects/${project}`]){page=await fetch(base+`/app/w/${id}`+path,{headers:headers()});assert.equal(page.status,200);const html=await page.text();assert.match(html,path.startsWith('/issues')?/HTTP Issue/:/HTTP Project/);assert.doesNotMatch(html,/データを読み込めませんでした/);}
 response=await work({operation:'archive',id:issue,expected_version:d.item.version});assert.equal(response.status,200);assert.equal((await items('issues')).total,0);assert.equal((await items('detail',{kind:'project',id:project})).item.issue_count,0);
 d=await items('detail',{kind:'issue',id:issue});response=await work({operation:'restore',id:issue,expected_version:d.item.version});assert.equal(response.status,200);assert.equal((await items('issues')).total,1);
+const wikiUrl=base+`/api/workspaces/${id}/wiki`;
+async function wiki(body){return fetch(wikiUrl,{method:'POST',headers:{...headers(),origin:base,'content-type':'application/json'},body:JSON.stringify(body)});}
+async function wikiRead(collection,filter={}){const response=await fetch(wikiUrl+'?'+new URLSearchParams({collection,...filter}),{headers:headers()});assert.equal(response.status,200);return response.json();}
+const wikiDoc={type:'doc',content:[{type:'heading',attrs:{level:2},content:[{type:'text',text:'FAQと手順'}]},{type:'paragraph',content:[{type:'text',text:'<img src=x onerror="alert(1)">'}]},{type:'taskList',content:[{type:'taskItem',attrs:{checked:true},content:[{type:'paragraph',content:[{type:'text',text:'準備完了'}]}]}]}]};
+response=await wiki({operation:'create',title:'HTTP Wiki',category:'FAQ',status:'draft',body_doc:wikiDoc,related_ids:[issue,project]});assert.equal(response.status,200);const wikiId=(await response.json()).id;
+const imageForm=new FormData();imageForm.set('page_id',wikiId);imageForm.set('image',new Blob([Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jB9kAAAAASUVORK5CYII=','base64')],{type:'image/png'}),'test.png');
+response=await fetch(wikiUrl+'/attachments',{method:'POST',headers:{...headers(),origin:base},body:imageForm});assert.equal(response.status,201);const attachment=(await response.json()).id;
+const imageUrl=wikiUrl+'/attachments/'+attachment;response=await fetch(imageUrl,{headers:headers()});assert.equal(response.status,200);assert.equal(response.headers.get('x-content-type-options'),'nosniff');
+const wd=await wikiRead('detail',{id:wikiId});const publishedDoc={...wikiDoc,content:[...wikiDoc.content,{type:'image',attrs:{attachmentId:attachment,alt:'添付の確認'}}]};
+response=await wiki({operation:'update',id:wikiId,expected_version:wd.page.version,title:'HTTP Wiki',category:'FAQ',status:'published',body_doc:publishedDoc,related_ids:[issue,project]});assert.equal(response.status,200);
+assert.equal((await wikiRead('list',{q:'準備完了',category:'FAQ'})).total,1);assert.equal((await wikiRead('backlinks',{id:issue}))[0].id,wikiId);assert.equal((await wikiRead('backlinks',{id:project}))[0].id,wikiId);
+for(const path of [`/wiki`,`/wiki/${wikiId}`,`/wiki/${wikiId}/edit`,`/wiki/${wikiId}/history/1`,`/wiki/new`,`/issues/${issue}`,`/projects/${project}`]){const response=await fetch(base+`/app/w/${id}`+path,{headers:headers()});assert.equal(response.status,200);const html=await response.text();assert.doesNotMatch(html,/データを読み込めませんでした/);if(!path.endsWith('/edit')&&!path.endsWith('/new'))assert.match(html,/HTTP Wiki/);if(path===`/wiki/${wikiId}`){assert.match(html,/&lt;img/);assert.doesNotMatch(html,/<img[^>]*onerror=/);}}
+const badImage=new FormData();badImage.set('page_id',wikiId);badImage.set('image',new Blob(['<svg onload="alert(1)"></svg>'],{type:'image/png'}),'bad.png');response=await fetch(wikiUrl+'/attachments',{method:'POST',headers:{...headers(),origin:base},body:badImage});assert.equal(response.status,400);
 page=await fetch(base+`/app/w/${id}/settings`,{headers:headers()});assert.equal(page.status,200);assert.match(await page.text(),/メンバー一覧/);
 response=await post({operation:'invite',workspace_id:id,email:'user2@test.invalid',role:'viewer'});assert.equal(response.status,200);const invitation=(await response.json()).inviteToken;assert.match(invitation,/^[a-f0-9]{64}$/);
 response=await post({operation:'update',workspace_id:id,name:'CSRF',description:''},{origin:'https://attacker.test'});assert.equal(response.status,403);
@@ -41,12 +54,15 @@ await client.auth.signOut();
 await client.auth.signInWithPassword({email:'user2@test.invalid',password:'Test-password-123'});
 response=await post({operation:'update',workspace_id:id,name:'Cross workspace',description:''});assert.equal(response.status,403);
 response=await work({operation:'issue_create',title:'forbidden',status:'open',priority:'normal',labels:[]});assert.equal(response.status,403);
+response=await fetch(imageUrl,{headers:headers()});assert.equal(response.status,403);
 page=await fetch(base+`/app/w/${id}`,{headers:headers()});assert.equal((await page.text()).includes(updatedName),false);
 response=await post({operation:'accept',token:invitation});assert.equal(response.status,200);
 page=await fetch(base+`/app/w/${id}`,{headers:headers()});assert.equal((await page.text()).includes(updatedName),true);
 response=await post({operation:'update',workspace_id:id,name:'Viewer write',description:''});assert.equal(response.status,403);
 response=await work({operation:'issue_create',title:'viewer forbidden',status:'open',priority:'normal',labels:[]});assert.equal(response.status,403);
+response=await wiki({operation:'create',title:'viewer forbidden',category:'FAQ',status:'published',body_doc:wikiDoc,related_ids:[]});assert.equal(response.status,403);
+response=await fetch(imageUrl,{headers:headers()});assert.equal(response.status,200);response=await fetch(wikiUrl+'?'+new URLSearchParams({collection:'revision',id:wikiId,revision:'1'}),{headers:headers()});assert.equal(response.status,404);
 await client.auth.signOut();
 page=await fetch(base+'/app',{headers:headers(),redirect:'manual'});assert.equal(page.status,307);
 await client.auth.stopAutoRefresh();
-console.log('HTTP smoke passed: Phase 2 auth/workspaces regression; Phase 3 projects/issues CRUD, filters, progress, comments/history, rendered pages, archive/restore, cross-workspace and viewer denial.');
+console.log('HTTP smoke passed: Phases 2/3 regression; Wiki CRUD/search/revisions/backlinks/rendering/XSS, private image upload/download, MIME validation, viewer/cross-workspace denial.');
