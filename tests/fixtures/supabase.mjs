@@ -1,7 +1,7 @@
 // Local-only HTTP adapter for UI/Auth integration tests. Never uses environment credentials.
 import { createServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { PGlite } from '@electric-sql/pglite';
 export async function startFixture(port = 0) {
@@ -14,7 +14,8 @@ export async function startFixture(port = 0) {
     create function auth.uid() returns uuid language sql stable as $$ select (auth.jwt()->>'sub')::uuid $$;
     grant usage on schema auth to authenticated; grant execute on all functions in schema auth to authenticated;`);
   for (const user of users) await db.query('insert into auth.users values($1,$2,$3,$4)',[user.id,user.email,user.email_confirmed_at,JSON.stringify(user.user_metadata)]);
-  await db.exec(await readFile(new URL('../../supabase/migrations/20261017072651_phase2_workspaces.sql',import.meta.url),'utf8'));
+  const migrations = new URL('../../supabase/migrations/', import.meta.url);
+  for (const file of (await readdir(migrations)).filter(name => name.endsWith('.sql')).sort()) await db.exec(await readFile(new URL(file,migrations),'utf8'));
   const sessions = new Map(); const refreshes = new Map();
   function session(user) {
     const now = Math.floor(Date.now()/1000);
@@ -54,6 +55,8 @@ export async function startFixture(port = 0) {
           const result=await db.query('select public.workspace_command($1,$2::jsonb) as value',[body.operation,JSON.stringify(body.payload)]);
           return send(200,result.rows[0].value);
         }
+        if(url.pathname==='/rest/v1/rpc/work_item_command')return send(200,(await db.query('select public.work_item_command($1,$2,$3::jsonb) as value',[body.target_workspace,body.operation,JSON.stringify(body.payload)])).rows[0].value);
+        if(url.pathname==='/rest/v1/rpc/work_items_query')return send(200,(await db.query('select public.work_items_query($1,$2,$3::jsonb) as value',[body.target_workspace,body.collection,JSON.stringify(body.filters)])).rows[0].value);
         if(url.pathname==='/rest/v1/rpc/workspace_people')return send(200,(await db.query('select * from public.workspace_people($1)',[body.target_workspace])).rows);
         if(url.pathname==='/rest/v1/rpc/workspace_pending_invitations')return send(200,(await db.query('select * from public.workspace_pending_invitations($1)',[body.target_workspace])).rows);
         if(url.pathname==='/rest/v1/workspaces')return send(200,(await db.query('select * from public.workspaces order by created_at')).rows);

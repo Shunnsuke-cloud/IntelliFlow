@@ -12,6 +12,8 @@ export type Database = { public: {
     workspace_command: { Args: { operation: string; payload: Json }; Returns: Json };
     workspace_people: { Args: { target_workspace: string }; Returns: { user_id: string; display_name: string; role: WorkspaceRole; joined_at: string }[] };
     workspace_pending_invitations: { Args: { target_workspace: string }; Returns: Invitation[] };
+    work_items_query: { Args: { target_workspace: string; collection: string; filters: Json }; Returns: Json };
+    work_item_command: { Args: { target_workspace: string; operation: string; payload: Json }; Returns: Json };
   };
   Enums: Record<string, never>; CompositeTypes: Record<string, never>;
 } };
