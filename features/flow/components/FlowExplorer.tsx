@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { Button, Field, Modal } from '@/components/ui/controls';
 import type { WorkspaceRole } from '@/lib/auth/policy';
 import HandoffLinks from '@/features/handoffs/components/HandoffLinks';
+import { useAI } from '@/features/ai/components/AIProvider';
+import type { AIResult } from '@/features/ai/types';
 import { canLink, defaultFilters, edgeLabels, flowHref, flowKinds, flowStatuses, MAX_EDGES, MAX_NODES, mergeGraph, type FlowBatch, type FlowFilters, type FlowNode } from '../types';
 const FlowCanvas = dynamic(() => import('./FlowCanvas'), { ssr: false, loading: () => <p role="status">マップを準備しています…</p> });
 const date = (value: string) => new Date(value).toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
@@ -20,6 +22,17 @@ export default function FlowExplorer({ workspaceId, role, initial, initialFilter
   const [targetKind, setTargetKind] = useState('wiki');
   const selectionRequest = useRef(0); const currentSelected = useRef<string | null>(null);
   const root = `/api/workspaces/${workspaceId}/flow`;
+  const ai = useAI(); const [aiIds, setAIIds] = useState<string[]>([]);
+  async function showAISources(result: AIResult) {
+    setBusy(true); setError('');
+    try {
+      let batch: FlowBatch = { nodes: result.sources, edges: [], result_ids: result.source_ids, has_more: false, offset: 0, limit: 8 };
+      for (const id of result.source_ids.slice(0, 2)) batch = mergeGraph(batch, await get<FlowBatch>('neighbors', { id }));
+      setGraph(batch); setAIIds(result.source_ids); setExpanded({}); setSelectedId(null); setDetail(null); currentSelected.current = null;
+      setView('map'); if (result.source_ids[0]) void select(result.source_ids[0]);
+    } catch { setError('資料を取得できませんでした。閲覧権限や更新状態を確認してください。'); }
+    finally { setBusy(false); }
+  }
   const selected = detail?.id === selectedId ? detail : graph.nodes.find(n => n.id === selectedId);
   const capped = graph.nodes.length >= MAX_NODES || graph.edges.length >= MAX_EDGES;
   async function get<T>(collection: string, values: Record<string, string | number | boolean>, signal?: AbortSignal): Promise<T> {
@@ -39,6 +52,7 @@ export default function FlowExplorer({ workspaceId, role, initial, initialFilter
     } catch (err) { if (request === selectionRequest.current) { currentSelected.current = null; setError(err instanceof Error ? err.message : '詳細を取得できませんでした。'); } }
   }, [workspaceId, applied.archived]);
   async function search(offset = 0, next = filters) {
+    setAIIds([]);
     setBusy(true); setError('');
     try {
       const batch = await get<FlowBatch>('search', { ...next, offset }); setGraph(batch); setApplied(next); setExpanded({}); setSelectedId(null); setDetail(null); currentSelected.current = null; selectionRequest.current++;
@@ -74,17 +88,18 @@ export default function FlowExplorer({ workspaceId, role, initial, initialFilter
   const related = graph.edges.filter(e => e.source_id === selectedId || e.target_id === selectedId);
   return <>
     <header className="work-page-heading"><div><p className="if-kicker">FLOW MAP</p><h1>過去の情報から、次の手がかりへ。</h1><p>課題・資料・プロジェクト・引き継ぎを検索し、つながりをたどります。</p></div></header>
+    <div className="ai-flow-help"><Button type="button" disabled={busy} onClick={() => ai?.open({ feature: 'flow', sourceIds: [], question: filters.q, filters: { kind: filters.kind, project: filters.project, from: filters.from, to: filters.to }, onResult: showAISources })}>✦ AIに質問</Button><span className="work-subtle">質問を送信したときだけAIを利用します。</span></div>
     <form className="flow-search" onSubmit={submit}><Field label="過去の情報を検索" name="q" type="search" value={filters.q} onChange={e => setFilters({ ...filters, q: e.target.value })} maxLength={200} placeholder="例：イベント 問題（空白で複数語）" /><Button disabled={busy}>{busy ? '処理中…' : '検索する'}</Button>
       <div className="flow-filters"><label className="if-field"><span>情報の種類</span><select value={filters.kind} onChange={e => setFilters({ ...filters, kind: e.target.value })}><option value="">すべて</option>{Object.entries(flowKinds).map(([key, name]) => <option key={key} value={key}>{name}</option>)}</select></label><Field label="更新日：開始" type="date" value={filters.from} onChange={e => setFilters({ ...filters, from: e.target.value })} /><Field label="更新日：終了" type="date" value={filters.to} onChange={e => setFilters({ ...filters, to: e.target.value })} /><label className="flow-checkbox"><input type="checkbox" checked={filters.archived} onChange={e => setFilters({ ...filters, archived: e.target.checked })} />削除済みも含める</label><Button type="button" disabled={busy} onClick={() => { setFilters(defaultFilters); setProjectName(''); void search(0, defaultFilters); }}>条件をリセット</Button></div>
       <details className="flow-project-filter"><summary>Projectで絞り込む：{filters.project ? projectName || '指定したProject' : '指定なし'}</summary><div className="flow-search"><Field label="Project名を探す" value={projectQuery} maxLength={200} onChange={e => setProjectQuery(e.target.value)} /><Button type="button" disabled={busy} onClick={() => findProjects()}>候補を探す</Button></div>{projects && <><div className="flow-options">{projects.nodes.map(p => <Button type="button" key={p.id} onClick={() => { setFilters({ ...filters, project: p.id }); setProjectName(p.title); }}>{p.title}</Button>)}</div>{!projects.nodes.length && <p>該当するProjectはありません。</p>}<div className="work-actions"><Button type="button" disabled={busy || !projectOffset} onClick={() => findProjects(projectOffset - 10)}>前へ</Button><Button type="button" disabled={busy || !projects.has_more} onClick={() => findProjects(projectOffset + 10)}>次へ</Button><Button type="button" onClick={() => { setFilters({ ...filters, project: '' }); setProjectName(''); }}>指定を外す</Button></div></>}</details>
     </form>
     {error && !linking && <p role="alert" className="if-error">{error}</p>}
-    <p className="work-subtle" role="status">検索結果 {resultNodes.length}件{graph.has_more ? '（続きがあります）' : ''} · マップ {graph.nodes.length}件 / {MAX_NODES}件 · 線 {graph.edges.length}本 / {MAX_EDGES}本</p>
-    <p className="work-subtle">タイトル・現在の本文を部分一致で検索します。日付は日本時間の更新日です。検索条件は検索結果に適用し、つながる情報は条件の外からも表示します。文章の意味を理解する検索はまだありません。</p>
+    <p className="work-subtle" role="status">{aiIds.length ? 'AI回答の根拠' : '検索結果'} {resultNodes.length}件{graph.has_more ? '（続きがあります）' : ''} · マップ {graph.nodes.length}件 / {MAX_NODES}件 · 線 {graph.edges.length}本 / {MAX_EDGES}本</p>
+    <p className="work-subtle">タイトル・現在の本文を部分一致で検索します。日付は日本時間の更新日です。検索条件は検索結果に適用し、つながる情報は条件の外からも表示します。通常検索はAIを使用しません。</p>
     <div className="flow-view-toggle"><Button aria-pressed={view === 'list'} onClick={() => setView('list')}>検索結果一覧</Button><Button aria-pressed={view === 'map'} onClick={() => setView('map')}>マップを表示</Button></div>
     <div className={`flow-workbench flow-view-${view}`} aria-busy={busy}>
       <section className="flow-results" aria-label="検索結果"><h2>検索結果</h2>{resultNodes.length ? resultNodes.map(node => <button className={`flow-result flow-kind-${node.kind}`} key={node.id} aria-pressed={selectedId === node.id} onClick={() => select(node.id)}><span>{flowKinds[node.kind]}{node.archived_at && ' · 削除済み'}</span><strong>{node.title}</strong><p>{node.excerpt || '本文はありません'}</p><small>{date(node.updated_at)}</small></button>) : <div className="if-state"><h3>該当する情報はありません</h3><p>キーワードを短くするか、日付や種類の条件を変えてください。</p></div>}<div className="work-actions"><Button disabled={busy || !graph.offset} onClick={() => search(Math.max(0, graph.offset - 10), applied)}>前へ</Button><Button disabled={busy || !graph.has_more} onClick={() => search(graph.offset + 10, applied)}>次へ</Button></div></section>
-      <section className="flow-map-section" aria-label="関連マップ"><div className="flow-legend">{Object.entries(flowKinds).map(([kind, label]) => <span key={kind} className={`flow-kind-${kind}`}>● {label}</span>)}<span>点線枠：検索結果</span></div>{graph.nodes.length ? (desktop || view === 'map') && <FlowCanvas graph={graph} selectedId={selectedId} onSelect={select} /> : <div className="if-state"><p>検索結果があるとマップが表示されます。</p></div>}<p className="work-subtle">ノードを移動・選択できます。拡大縮小と「全体を表示」で見やすく調整してください。配置の変更は保存されません。</p></section>
+      <section className="flow-map-section" aria-label="関連マップ"><div className="flow-legend">{Object.entries(flowKinds).map(([kind, label]) => <span key={kind} className={`flow-kind-${kind}`}>● {label}</span>)}<span>点線枠：検索結果 / AIの根拠</span></div>{graph.nodes.length ? (desktop || view === 'map') && <FlowCanvas graph={graph} selectedId={selectedId} onSelect={select} highlightIds={aiIds} /> : <div className="if-state"><p>検索結果があるとマップが表示されます。</p></div>}<p className="work-subtle">ノードを移動・選択できます。拡大縮小と「全体を表示」で見やすく調整してください。配置の変更は保存されません。</p></section>
       <aside className="flow-detail" aria-label="選択した情報">{selected ? <><span className={`flow-kind-${selected.kind}`}>{flowKinds[selected.kind]} · {flowStatuses[selected.status] ?? '状態未設定'}</span><h2>{selected.title}</h2><p className="work-subtle">更新：{date(selected.updated_at)}{selected.archived_at && ' · 削除済み'}</p><p className="flow-excerpt">{selected.excerpt || '本文はありません'}</p><Link className="if-button" href={flowHref(workspaceId, selected)}>元の{flowKinds[selected.kind]}を開く →</Link><Button disabled={busy || capped || expanded[selected.id]?.more === false} onClick={expand}>{expanded[selected.id]?.more === false ? '関連情報をすべて取得しました' : '関連情報を追加でたどる'}</Button>{capped && <p role="status">表示上限に達しました。検索条件を絞ってください。</p>}
         <h3>表示中のつながり</h3>{related.length ? <ul className="flow-related">{related.map(edge => { const target = graph.nodes.find(n => n.id === (edge.source_id === selected.id ? edge.target_id : edge.source_id)); return target && <li key={edge.id}><small>{edgeLabels[edge.relation_type] ?? '関連'}</small><button onClick={() => select(target.id)}>{target.title}</button>{role !== 'viewer' && canLink(selected, target) && ['references', 'related_to'].includes(edge.relation_type) && <Button disabled={busy} onClick={() => relate(target, 'unlink')}>関連を外す</Button>}</li>; })}</ul> : <p>まだつながりが表示されていません。追加取得で確認できます。</p>}
         {selected.kind !== 'handoff' && <HandoffLinks key={selected.id} workspaceId={workspaceId} resourceId={selected.id} canCreate={role !== 'viewer' && !selected.archived_at && ['issue', 'project'].includes(selected.kind)} />}

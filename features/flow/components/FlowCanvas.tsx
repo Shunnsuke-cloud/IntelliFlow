@@ -12,13 +12,13 @@ function layoutNodes(graph: FlowBatch, current: Node[] = []): Node[] {
     className: `flow-node flow-node-${node.kind}`, ariaLabel: `${flowKinds[node.kind]}：${node.title}`, style: { width: 250 },
   }));
 }
-export default function FlowCanvas({ graph, selectedId, onSelect }: { graph: FlowBatch; selectedId: string | null; onSelect: (id: string) => void }) {
+export default function FlowCanvas({ graph, selectedId, onSelect, highlightIds }: { graph: FlowBatch; selectedId: string | null; onSelect: (id: string) => void; highlightIds: string[] }) {
   const [layout, setLayout, onNodesChange] = useNodesState<Node>(layoutNodes(graph));
   useEffect(() => {
     setLayout(current => layoutNodes(graph, current));
   }, [graph, setLayout]);
   const neighbors = useMemo(() => new Set(graph.edges.filter(e => e.source_id === selectedId || e.target_id === selectedId).flatMap(e => [e.source_id, e.target_id])), [graph.edges, selectedId]);
-  const nodes = useMemo(() => layout.map(node => ({ ...node, selected: node.id === selectedId, className: node.className + (graph.result_ids.includes(node.id) ? ' is-result' : '') + (selectedId && node.id !== selectedId && !neighbors.has(node.id) ? ' is-dimmed' : '') })), [layout, graph.result_ids, selectedId, neighbors]);
+  const nodes = useMemo(() => layout.map(node => ({ ...node, selected: node.id === selectedId, className: node.className + (graph.result_ids.includes(node.id) ? ' is-result' : '') + (highlightIds.includes(node.id) ? ' ai-highlight' : selectedId && node.id !== selectedId && !neighbors.has(node.id) ? ' is-dimmed' : '') })), [layout, graph.result_ids, selectedId, neighbors, highlightIds]);
   const edges: Edge[] = useMemo(() => graph.edges.map(edge => ({ id: edge.id, source: edge.source_id, target: edge.target_id, label: edgeLabels[edge.relation_type] ?? '関連', type: 'smoothstep', style: { stroke: edge.source_id === selectedId || edge.target_id === selectedId ? 'var(--if-accent)' : 'var(--if-muted)', strokeWidth: edge.source_id === selectedId || edge.target_id === selectedId ? 2.5 : 1, opacity: selectedId && edge.source_id !== selectedId && edge.target_id !== selectedId ? 0.25 : 1 }, labelStyle: { fill: 'var(--if-text)', fontSize: 10 }, labelBgStyle: { fill: 'var(--if-surface)' } })), [graph.edges, selectedId]);
   const click = useCallback((_: React.MouseEvent, node: Node) => onSelect(node.id), [onSelect]);
   const change: OnNodesChange = useCallback(changes => { onNodesChange(changes); for (const change of changes) if (change.type === 'select' && change.selected && change.id !== selectedId) onSelect(change.id); }, [onNodesChange, selectedId, onSelect]);
