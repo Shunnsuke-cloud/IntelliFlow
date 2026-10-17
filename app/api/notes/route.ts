@@ -1,83 +1,28 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createNote, getNotes, removeNote, updateNote, createSupabaseClientWithToken } from "@/lib/notes-store";
-
-export async function GET(req: NextRequest) {
-  const url = new URL(req.url);
-  const q = url.searchParams.get("q") ?? "";
-
-  const notes = await getNotes(q);
-  return NextResponse.json(notes);
+import { NextResponse } from 'next/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { requireApiUser, readBody, textField, HttpError, apiError } from '@/lib/auth/server';
+import { getNotes, noteTable, savedNote, type NotesRow } from '@/lib/notes-store';
+export async function GET(req: Request) {
+  try {
+    const { client, user } = await requireApiUser(req);
+    const q = new URL(req.url).searchParams.get('q') ?? '';
+    if (q.length > 200) throw new HttpError(400, '検索語が長すぎます。');
+    return NextResponse.json(await getNotes(client, user.id, q), { headers: { 'Cache-Control': 'no-store' } });
+  } catch (error) { return apiError(error); }
 }
-
-export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => ({}));
-  const input = (body.input || "").toString().trim();
-
-  if (!input) {
-    return NextResponse.json({ error: "input required" }, { status: 400 });
-  }
-  // Try to extract user id from Authorization header and create a user-scoped supabase client
-  const authHeader = req.headers.get("authorization") ?? req.headers.get("Authorization");
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
-  const client = token ? createSupabaseClientWithToken(token) : undefined;
-  let owner: string | undefined = undefined;
-  if (client) {
-    try {
-      const userRes = await (client as any).auth.getUser();
-      owner = userRes?.data?.user?.id ?? undefined;
-    } catch {
-      owner = undefined;
-    }
-  }
-
-  const newNote = await createNote(input, owner, client as any);
-  return NextResponse.json(newNote, { status: 201 });
+async function mutate(req: Request, method: 'POST' | 'PUT' | 'DELETE') {
+  try {
+    const { client, user } = await requireApiUser(req); const body = await readBody(req);
+    // The legacy table is deliberately outside the new workspace schema.
+    const table = (client as SupabaseClient).from(noteTable());
+    const id = method === 'POST' ? crypto.randomUUID() : textField(body.id, 200);
+    const input = method === 'DELETE' ? '' : textField(body.input, 10000);
+    const result = method === 'POST' ? await table.insert({ id, input, owner: user.id }).select('id,input,saved_at,owner').single() : method === 'PUT' ? await table.update({ input }).eq('id', id).eq('owner', user.id).select('id,input,saved_at,owner').maybeSingle() : await table.delete().eq('id', id).eq('owner', user.id).select('id').maybeSingle();
+    if (result.error) throw result.error;
+    if (!result.data) throw new HttpError(404, 'ノートが見つかりません。');
+    return NextResponse.json(method === 'DELETE' ? { success: true, id } : savedNote(result.data as NotesRow), { status: method === 'POST' ? 201 : 200 });
+  } catch (error) { return apiError(error); }
 }
-
-export async function PUT(req: NextRequest) {
-  const body = await req.json().catch(() => ({}));
-  const id = (body.id || "").toString();
-  const input = (body.input || "").toString().trim();
-
-  if (!id || !input) {
-    return NextResponse.json({ error: "id and input required" }, { status: 400 });
-  }
-
-  const authHeader = req.headers.get("authorization") ?? req.headers.get("Authorization");
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
-  const client = token ? createSupabaseClientWithToken(token) : undefined;
-  let owner: string | undefined = undefined;
-  if (client) {
-    try {
-      const userRes = await (client as any).auth.getUser();
-      owner = userRes?.data?.user?.id ?? undefined;
-    } catch {
-      owner = undefined;
-    }
-  }
-
-  const nextNote = await updateNote(id, input, owner, client as any);
-  return NextResponse.json(nextNote);
-}
-
-export async function DELETE(req: NextRequest) {
-  const body = await req.json().catch(() => ({}));
-  const id = (body.id || "").toString();
-
-  if (!id) {
-    return NextResponse.json({ error: "id required" }, { status: 400 });
-  }
-  const authHeader = req.headers.get("authorization") ?? req.headers.get("Authorization");
-  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : undefined;
-  const client = token ? createSupabaseClientWithToken(token) : undefined;
-
-  // Prefer delete via user-scoped client so RLS enforces ownership. If no token, fallback to service-role (notes-store will handle).
-  if (client) {
-    // removeNote currently uses service config; call delete directly via client to ensure RLS
-    await client.from(process.env.SUPABASE_NOTES_TABLE ?? "notes").delete().eq("id", id);
-  } else {
-    await removeNote(id);
-  }
-
-  return NextResponse.json({ success: true, id });
-}
+export const POST = (req: Request) => mutate(req, 'POST');
+export const PUT = (req: Request) => mutate(req, 'PUT');
+export const DELETE = (req: Request) => mutate(req, 'DELETE');

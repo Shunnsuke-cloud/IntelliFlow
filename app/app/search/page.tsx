@@ -1,3 +1,2 @@
-import SearchWorkspace from "../../components/SearchWorkspace";
-
-export default function SearchPage() { return <main className="page-shell"><SearchWorkspace /></main>; }
+import { redirect } from 'next/navigation';
+export default function LegacySearch() { redirect('/app'); }

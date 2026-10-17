@@ -1,3 +1,2 @@
-import TasksWorkspace from "../../components/TasksWorkspace";
-
-export default function TasksPage() { return <main className="page-shell"><TasksWorkspace /></main>; }
+import { redirect } from 'next/navigation';
+export default function LegacyTasks() { redirect('/app'); }
