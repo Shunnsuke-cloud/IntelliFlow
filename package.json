@@ -6,21 +6,25 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.106.1",
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.118.0",
     "motion": "^14.0.0",
-    "next": "latest",
+    "next": "16.4.2",
     "react": "latest",
     "react-dom": "latest"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.10",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "eslint": "latest",
-    "eslint-config-next": "latest",
+    "eslint-config-next": "16.4.2",
     "typescript": "latest"
   }
 }
