@@ -57,6 +57,13 @@ async function flowRelation(operation,extra={}){return fetch(flowUrl,{method:'PO
 response=await flowRelation('unlink');assert.equal(response.status,200);assert.ok(!(await flow('neighbors',{id:issue})).edges.some(e=>e.source_id===wikiId&&e.target_id===issue));
 source=await flow('detail',{id:issue});target=await flow('detail',{id:wikiId});response=await flowRelation('link');assert.equal(response.status,200);assert.ok((await flow('neighbors',{id:issue})).edges.some(e=>e.source_id===wikiId&&e.target_id===issue));
 response=await fetch(flowUrl,{method:'POST',headers:{...headers(),origin:'https://attacker.test','content-type':'application/json'},body:JSON.stringify({operation:'link'})});assert.equal(response.status,403);
+const handoffUrl=base+`/api/workspaces/${id}/handoffs`;
+async function handoffRead(collection='list',filter={}){const response=await fetch(handoffUrl+'?'+new URLSearchParams({collection,...filter}),{headers:headers()});assert.equal(response.status,200);return response.json();}
+async function handoffWrite(body){return fetch(handoffUrl,{method:'POST',headers:{...headers(),origin:base,'content-type':'application/json'},body:JSON.stringify(body)});}
+const seed=await handoffRead('seed',{source_id:issue});assert.ok(seed.related.some(r=>r.id===wikiId));assert.ok(seed.related.some(r=>r.id===project));assert.equal((await handoffRead()).items.length,0);
+const hBody={title:'HTTP Handoff',summary:'引き継ぎの概要 <script>handoff</script>',current_state:'現在の進捗',completed_work:'完了済み作業',pending_work:'未完了作業',risks:'注意事項',next_actions:'次に行うこと',recipient_id:null,related_ids:seed.related.map(r=>r.id)};
+response=await handoffWrite({operation:'create',...hBody});assert.equal(response.status,200);const handoffId=(await response.json()).id;
+for(const suffix of ['/handoffs',`/handoffs/new?source_id=${issue}`,`/handoffs/new?source_id=${project}`,`/handoffs/${handoffId}`,`/handoffs/${handoffId}/edit`]){page=await fetch(base+`/app/w/${id}`+suffix,{headers:headers()});assert.equal(page.status,200);const html=await page.text();assert.doesNotMatch(html,/引き継ぎを読み込めませんでした/);assert.match(html,suffix.includes('/new?')?/元の情報から作った候補/:/HTTP Handoff/);}
 page=await fetch(base+`/app/w/${id}/settings`,{headers:headers()});assert.equal(page.status,200);assert.match(await page.text(),/メンバー一覧/);
 response=await post({operation:'invite',workspace_id:id,email:'user2@test.invalid',role:'viewer'});assert.equal(response.status,200);const invitation=(await response.json()).inviteToken;assert.match(invitation,/^[a-f0-9]{64}$/);
 response=await post({operation:'update',workspace_id:id,name:'CSRF',description:''},{origin:'https://attacker.test'});assert.equal(response.status,403);
@@ -67,6 +74,7 @@ response=await post({operation:'update',workspace_id:id,name:'Cross workspace',d
 response=await work({operation:'issue_create',title:'forbidden',status:'open',priority:'normal',labels:[]});assert.equal(response.status,403);
 response=await fetch(imageUrl,{headers:headers()});assert.equal(response.status,403);
 response=await fetch(flowUrl,{headers:headers()});assert.equal(response.status,403);
+response=await fetch(handoffUrl,{headers:headers()});assert.equal(response.status,403);
 page=await fetch(base+`/app/w/${id}`,{headers:headers()});assert.equal((await page.text()).includes(updatedName),false);
 response=await post({operation:'accept',token:invitation});assert.equal(response.status,200);
 page=await fetch(base+`/app/w/${id}`,{headers:headers()});assert.equal((await page.text()).includes(updatedName),true);
@@ -75,7 +83,29 @@ response=await work({operation:'issue_create',title:'viewer forbidden',status:'o
 response=await wiki({operation:'create',title:'viewer forbidden',category:'FAQ',status:'published',body_doc:wikiDoc,related_ids:[]});assert.equal(response.status,403);
 assert.ok((await flow('search',{q:'HTTP Issue'})).nodes.some(n=>n.id===wikiId));response=await flowRelation('unlink');assert.equal(response.status,403);
 response=await fetch(imageUrl,{headers:headers()});assert.equal(response.status,200);response=await fetch(wikiUrl+'?'+new URLSearchParams({collection:'revision',id:wikiId,revision:'1'}),{headers:headers()});assert.equal(response.status,404);
+const receiver=(await client.auth.getUser()).data.user.id;
+response=await fetch(handoffUrl+'?'+new URLSearchParams({collection:'detail',id:handoffId}),{headers:headers()});assert.equal(response.status,404);
+response=await handoffWrite({operation:'create',...hBody});assert.equal(response.status,403);
+await client.auth.signOut();await client.auth.signInWithPassword({email:'user1@test.invalid',password:'Test-password-123'});
+let hd=await handoffRead('detail',{id:handoffId});response=await handoffWrite({...hBody,operation:'update',id:handoffId,expected_version:hd.item.version,recipient_id:receiver});assert.equal(response.status,200);
+hd=await handoffRead('detail',{id:handoffId});response=await handoffWrite({operation:'send',id:handoffId,expected_version:hd.item.version});assert.equal(response.status,200);
+hd=await handoffRead('detail',{id:handoffId});assert.equal(hd.item.status,'sent');assert.equal(hd.current_snapshot.snapshot.related.length,3);const firstSend=hd.current_snapshot.snapshot;
+response=await handoffWrite({operation:'accept',id:handoffId,expected_version:hd.item.version,content_version:1});assert.equal(response.status,403);
+const hMap=await flow('search',{kind:'handoff',q:'HTTP Handoff'});assert.deepEqual(hMap.result_ids,[handoffId]);assert.ok(hMap.edges.some(e=>e.source_id===handoffId&&e.target_id===wikiId&&e.relation_type==='hands_over'));assert.ok((await flow('neighbors',{id:issue})).nodes.some(n=>n.id===handoffId));assert.equal((await handoffRead('backlinks',{id:issue})).items[0].id,handoffId);
+await client.auth.signOut();await client.auth.signInWithPassword({email:'user2@test.invalid',password:'Test-password-123'});
+assert.equal((await handoffRead('list',{mine:'true'})).items[0].id,handoffId);hd=await handoffRead('detail',{id:handoffId});
+page=await fetch(base+`/app/w/${id}/handoffs/${handoffId}`,{headers:headers()});assert.equal(page.status,200);let hHtml=await page.text();assert.match(hHtml,/この版を受領する/);assert.match(hHtml,/&lt;script&gt;handoff/);assert.doesNotMatch(hHtml,/<script>handoff/);
+response=await handoffWrite({operation:'accept',id:handoffId,expected_version:hd.item.version,content_version:1});assert.equal(response.status,200);hd=await handoffRead('detail',{id:handoffId});assert.equal(hd.receipts[0].recipient_id,receiver);assert.ok(hd.receipts[0].accepted_at);
+await client.auth.signOut();await client.auth.signInWithPassword({email:'user1@test.invalid',password:'Test-password-123'});
+hd=await handoffRead('detail',{id:handoffId});response=await handoffWrite({...hd.item,operation:'revise',expected_version:hd.item.version,related_ids:hd.related.map(r=>r.id),summary:'重要な改訂を確認してください',change_reason:'入口の変更'});assert.equal(response.status,200);
+assert.deepEqual((await handoffRead('version',{id:handoffId,version:'1'})).snapshot,firstSend);
+await client.auth.signOut();await client.auth.signInWithPassword({email:'user2@test.invalid',password:'Test-password-123'});
+hd=await handoffRead('detail',{id:handoffId});assert.equal(hd.item.status,'sent');assert.equal(hd.item.current_version,2);assert.equal(hd.receipts[0].version,1);
+response=await handoffWrite({operation:'accept',id:handoffId,expected_version:hd.item.version,content_version:1});assert.equal(response.status,409);
+response=await handoffWrite({operation:'accept',id:handoffId,expected_version:hd.item.version,content_version:2});assert.equal(response.status,200);
+hd=await handoffRead('detail',{id:handoffId});response=await handoffWrite({operation:'complete',id:handoffId,expected_version:hd.item.version,content_version:2});assert.equal(response.status,200);hd=await handoffRead('detail',{id:handoffId});assert.equal(hd.item.status,'completed');assert.equal(hd.receipts.length,2);assert.ok(hd.receipts[0].completed_at);
+page=await fetch(base+`/app/w/${id}/handoffs/${handoffId}/history/1`,{headers:headers()});assert.equal(page.status,200);assert.match(await page.text(),/送信時点の記録/);
 await client.auth.signOut();
 page=await fetch(base+'/app',{headers:headers(),redirect:'manual'});assert.equal(page.status,307);
 await client.auth.stopAutoRefresh();
-console.log('HTTP smoke passed: Phases 2/3/4 regression; Flow search, bounded graph, detail, neighbors, saved relations, source pages, SSR, validation, CSRF, viewer/cross-workspace denial.');
+console.log('HTTP smoke passed: Phases 2–5 regression; Handoff source candidates, draft/save/send, assigned Viewer receipt, immutable snapshots, revision/reconfirmation/completion, Flow nodes/links/search, SSR/XSS and workspace denial.');

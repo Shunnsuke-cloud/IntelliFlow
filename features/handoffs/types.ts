@@ -1,0 +1,15 @@
+import type { FlowNode } from '@/features/flow/types';
+export const handoffStatuses = { draft: '下書き', sent: '確認待ち', accepted: '受領済み', completed: '完了', cancelled: '取消済み（旧データ）' } as const;
+export type HandoffStatus = keyof typeof handoffStatuses;
+export const contentFields = { summary: '作業概要・過去の経緯', current_state: '現在の進捗', completed_work: '完了済み作業', pending_work: '未完了作業', risks: '注意事項', next_actions: '次に行うこと' } as const;
+export type HandoffContent = { [K in keyof typeof contentFields]: string };
+export type Handoff = HandoffContent & { id: string; workspace_id: string; title: string; version: number; current_version: number; sender_id: string; recipient_id: string | null; status: HandoffStatus; updated_at: string; created_at: string; archived_at: string | null };
+export type HandoffSummary = Omit<Handoff, keyof HandoffContent>;
+export type HandoffListing = { items: HandoffSummary[]; has_more: boolean; offset: number; limit: number };
+export type SnapshotResource = { id: string; kind: 'issue' | 'project' | 'wiki'; title: string; version: number; body: string; truncated: boolean; status: string; updated_at: string; issue_number: number | null; priority: string | null; due_on: string | null };
+export type HandoffSnapshot = HandoffContent & { title: string; sender_id: string; recipient_id: string; sender_name?: string | null; recipient_name?: string | null; related: SnapshotResource[] };
+export type SendVersion = { id: string; version: number; sent_at: string; sender_id: string | null; recipient_id: string | null; change_reason: string; snapshot: HandoffSnapshot };
+export type Receipt = { version: number; recipient_id: string; accepted_at: string; completed_at: string | null };
+export type HandoffDetail = { item: Handoff; related: FlowNode[]; current_snapshot: SendVersion | null; versions: Omit<SendVersion, 'snapshot'>[]; receipts: Receipt[]; events: { id: string; actor_id: string; action: string; after_data: { content_version: number; change_reason: string }; created_at: string }[] };
+export type HandoffSeed = HandoffContent & { title: string; related: FlowNode[] };
+export const emptyContent: HandoffContent = { summary: '', current_state: '', completed_work: '', pending_work: '', risks: '', next_actions: '' };

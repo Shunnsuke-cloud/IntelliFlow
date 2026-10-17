@@ -5,7 +5,7 @@ import {mergeGraph,flowHref,canLink,MAX_NODES,MAX_EDGES} from '../features/flow/
 const id=n=>`50000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
 test('Flow入力: 検索条件・実在日付・文字数・重複キー・ページ・更新版を検証',()=>{
  assert.deepEqual(flowFilters(new URLSearchParams({q:' イベント 問題 ',kind:'wiki',from:'2024-02-29',archived:'true',offset:'10'})),{q:'イベント 問題',kind:'wiki',from:'2024-02-29',archived:true,offset:10});
- for(const values of [{from:'2023-02-29'},{from:'2026-99-99'},{from:'2026-10-01',to:'2020-01-01'},{q:'x'.repeat(201)},{q:'a b c d e f g h i'},{offset:'10001'},{offset:'-1'},{kind:'handoff'},{project:'invalid'},{archived:'yes'},{limit:'1000'}])assert.throws(()=>flowFilters(new URLSearchParams(values)),FlowInputError);
+ for(const values of [{from:'2023-02-29'},{from:'2026-99-99'},{from:'2026-10-01',to:'2020-01-01'},{q:'x'.repeat(201)},{q:'a b c d e f g h i'},{offset:'10001'},{offset:'-1'},{kind:'unknown'},{project:'invalid'},{archived:'yes'},{limit:'1000'}])assert.throws(()=>flowFilters(new URLSearchParams(values)),FlowInputError);
  assert.throws(()=>flowFilters(new URLSearchParams('q=one&q=two')),FlowInputError);
  assert.throws(()=>relationInput({operation:'link',source_id:id(1),target_id:id(1),source_version:1,target_version:1}),FlowInputError);
  assert.throws(()=>relationInput({operation:'link',source_id:id(1),target_id:id(2),source_version:0,target_version:1}),FlowInputError);

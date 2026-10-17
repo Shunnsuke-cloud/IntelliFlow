@@ -1,9 +1,14 @@
 # IntelliFlow
 
+## Phase 6: Handoff
+
+Issue/Projectからの候補作成、手動の引き継ぎ編集・送信、受領・完了、版ごとのスナップショット・受領履歴、改訂後の再確認、Flow Map連携を追加しました。
+変更ファイル・権限・DB追加定義・検証範囲は [Phase 6ガイド](docs/phase6.md) を参照してください。本番DBへの適用・デプロイは未実施です。AIによる自動生成は追加していません。
+
 ## Phase 5: Flow Map
 
 過去のIssue・Project・Wikiの検索、種類/更新日/Projectの絞り込み、関連マップ、段階的な探索、元ページへの移動、関連付けの保存・解除を追加しました。
-変更ファイル・権限・DB追加定義・検証結果は [Phase 5ガイド](docs/phase5.md) を参照してください。本番DBへの適用・デプロイは未実施です。AIとHandoffの新規実装はありません。
+変更ファイル・権限・DB追加定義・検証結果は [Phase 5ガイド](docs/phase5.md) を参照してください。本番DBへの適用・デプロイは未実施です。Phase 5時点ではAIとHandoffの新規実装はありません。Handoffの現在の状態は上記Phase 6を参照してください。
 
 ## Phase 4: Wiki
 
