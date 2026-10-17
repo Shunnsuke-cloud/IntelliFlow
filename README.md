@@ -1,9 +1,14 @@
 # IntelliFlow
 
+## Phase 5: Flow Map
+
+過去のIssue・Project・Wikiの検索、種類/更新日/Projectの絞り込み、関連マップ、段階的な探索、元ページへの移動、関連付けの保存・解除を追加しました。
+変更ファイル・権限・DB追加定義・検証結果は [Phase 5ガイド](docs/phase5.md) を参照してください。本番DBへの適用・デプロイは未実施です。AIとHandoffの新規実装はありません。
+
 ## Phase 4: Wiki
 
 文章エディタ、ページ階層、検索・カテゴリ、画像添付、更新履歴・過去版表示、Issues / ProjectsとのIDによる関連付けを追加しました。
-変更ファイル・権限・DB / Storage設定・検証結果は [Phase 4ガイド](docs/phase4.md) を参照してください。本番DBへの適用・デプロイは未実施です。Flow Map / Handoff / AIの新規実装はまだありません。
+変更ファイル・権限・DB / Storage設定・検証結果は [Phase 4ガイド](docs/phase4.md) を参照してください。本番DBへの適用・デプロイは未実施です。Phase 4時点ではFlow Map / Handoff / AIの新規実装はありません。Flow Mapの現在の状態は上記Phase 5を参照してください。
 
 ## Phase 3: Issues / Projects
 

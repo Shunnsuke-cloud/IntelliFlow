@@ -3,6 +3,8 @@ import "./globals.css";
 import "./app/workspace.css";
 import "../features/work-items/work-items.css";
 import "../features/wiki/wiki.css";
+import '@xyflow/react/dist/style.css';
+import '../features/flow/flow.css';
 
 export const metadata: Metadata = {
   title: "IntelliFlow",

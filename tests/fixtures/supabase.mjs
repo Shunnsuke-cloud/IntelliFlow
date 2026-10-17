@@ -4,9 +4,10 @@ import { randomUUID } from 'node:crypto';
 import { readFile, readdir } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import { PGlite } from '@electric-sql/pglite';
+import { pg_trgm } from '@electric-sql/pglite/contrib/pg_trgm';
 import { installStorageSchema } from '../helpers/storage.mjs';
 export async function startFixture(port = 0) {
-  const db = new PGlite();
+  const db = new PGlite({ extensions: { pg_trgm } });
   const userId = n => `10000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
   const users = [1,2,3].map(n => ({ id: userId(n), email: `user${n}@test.invalid`, aud:'authenticated', role:'authenticated', email_confirmed_at: new Date().toISOString(), app_metadata:{provider:'email'}, user_metadata:{full_name:`テスト利用者 ${n}`}, created_at:new Date().toISOString() }));
   await db.exec(`create role anon; create role authenticated; create schema auth;
@@ -62,6 +63,8 @@ export async function startFixture(port = 0) {
         if(url.pathname==='/rest/v1/rpc/work_items_query')return send(200,(await db.query('select public.work_items_query($1,$2,$3::jsonb) as value',[body.target_workspace,body.collection,JSON.stringify(body.filters)])).rows[0].value);
         if(url.pathname==='/rest/v1/rpc/wiki_command')return send(200,(await db.query('select public.wiki_command($1,$2,$3::jsonb) as value',[body.target_workspace,body.operation,JSON.stringify(body.payload)])).rows[0].value);
         if(url.pathname==='/rest/v1/rpc/wiki_query')return send(200,(await db.query('select public.wiki_query($1,$2,$3::jsonb) as value',[body.target_workspace,body.collection,JSON.stringify(body.filters)])).rows[0].value);
+        if(url.pathname==='/rest/v1/rpc/flow_query')return send(200,(await db.query('select public.flow_query($1,$2,$3::jsonb) as value',[body.target_workspace,body.collection,JSON.stringify(body.filters)])).rows[0].value);
+        if(url.pathname==='/rest/v1/rpc/flow_relation_command')return send(200,(await db.query('select public.flow_relation_command($1,$2,$3::jsonb) as value',[body.target_workspace,body.operation,JSON.stringify(body.payload)])).rows[0].value);
         if(url.pathname==='/rest/v1/wiki_attachments'){
           const workspace=url.searchParams.get('workspace_id')?.slice(3);const id=url.searchParams.get('id')?.slice(3);
           const rows=(await db.query("select object_path,mime_type from public.wiki_attachments where workspace_id=$1 and id=$2 and state='ready'",[workspace,id])).rows;

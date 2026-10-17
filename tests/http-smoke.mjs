@@ -46,6 +46,17 @@ response=await wiki({operation:'update',id:wikiId,expected_version:wd.page.versi
 assert.equal((await wikiRead('list',{q:'準備完了',category:'FAQ'})).total,1);assert.equal((await wikiRead('backlinks',{id:issue}))[0].id,wikiId);assert.equal((await wikiRead('backlinks',{id:project}))[0].id,wikiId);
 for(const path of [`/wiki`,`/wiki/${wikiId}`,`/wiki/${wikiId}/edit`,`/wiki/${wikiId}/history/1`,`/wiki/new`,`/issues/${issue}`,`/projects/${project}`]){const response=await fetch(base+`/app/w/${id}`+path,{headers:headers()});assert.equal(response.status,200);const html=await response.text();assert.doesNotMatch(html,/データを読み込めませんでした/);if(!path.endsWith('/edit')&&!path.endsWith('/new'))assert.match(html,/HTTP Wiki/);if(path===`/wiki/${wikiId}`){assert.match(html,/&lt;img/);assert.doesNotMatch(html,/<img[^>]*onerror=/);}}
 const badImage=new FormData();badImage.set('page_id',wikiId);badImage.set('image',new Blob(['<svg onload="alert(1)"></svg>'],{type:'image/png'}),'bad.png');response=await fetch(wikiUrl+'/attachments',{method:'POST',headers:{...headers(),origin:base},body:badImage});assert.equal(response.status,400);
+const flowUrl=base+`/api/workspaces/${id}/flow`;
+async function flow(collection='search',filter={}){const response=await fetch(flowUrl+'?'+new URLSearchParams({collection,...filter}),{headers:headers()});assert.equal(response.status,200);return response.json();}
+const map=await flow('search',{q:'HTTP Issue',kind:'issue'});assert.deepEqual(map.result_ids,[issue]);assert.ok(map.nodes.some(n=>n.id===wikiId));assert.ok(map.edges.some(e=>e.source_id===wikiId&&e.target_id===issue));assert.ok(map.edges.some(e=>e.source_id===issue&&e.target_id===project&&e.relation_type==='belongs_to'));
+const selectedNode=await flow('detail',{id:issue});assert.equal(selectedNode.id,issue);assert.equal(selectedNode.kind,'issue');assert.ok((await flow('neighbors',{id:wikiId})).nodes.some(n=>n.id===issue));
+for(const suffix of ['/flow?q=HTTP','/flow?from=2023-02-29']){page=await fetch(base+`/app/w/${id}`+suffix,{headers:headers()});assert.equal(page.status,200);const html=await page.text();assert.match(html,suffix.includes('from=')?/検索条件を確認/:/過去の情報から/);assert.doesNotMatch(html,/Flow Mapを読み込めませんでした/);}
+response=await fetch(flowUrl+'?q=x&q=y',{headers:headers()});assert.equal(response.status,400);
+let source=await flow('detail',{id:issue}),target=await flow('detail',{id:wikiId});
+async function flowRelation(operation,extra={}){return fetch(flowUrl,{method:'POST',headers:{...headers(),origin:base,'content-type':'application/json'},body:JSON.stringify({operation,source_id:issue,source_version:source.version,target_id:wikiId,target_version:target.version,...extra})});}
+response=await flowRelation('unlink');assert.equal(response.status,200);assert.ok(!(await flow('neighbors',{id:issue})).edges.some(e=>e.source_id===wikiId&&e.target_id===issue));
+source=await flow('detail',{id:issue});target=await flow('detail',{id:wikiId});response=await flowRelation('link');assert.equal(response.status,200);assert.ok((await flow('neighbors',{id:issue})).edges.some(e=>e.source_id===wikiId&&e.target_id===issue));
+response=await fetch(flowUrl,{method:'POST',headers:{...headers(),origin:'https://attacker.test','content-type':'application/json'},body:JSON.stringify({operation:'link'})});assert.equal(response.status,403);
 page=await fetch(base+`/app/w/${id}/settings`,{headers:headers()});assert.equal(page.status,200);assert.match(await page.text(),/メンバー一覧/);
 response=await post({operation:'invite',workspace_id:id,email:'user2@test.invalid',role:'viewer'});assert.equal(response.status,200);const invitation=(await response.json()).inviteToken;assert.match(invitation,/^[a-f0-9]{64}$/);
 response=await post({operation:'update',workspace_id:id,name:'CSRF',description:''},{origin:'https://attacker.test'});assert.equal(response.status,403);
@@ -55,14 +66,16 @@ await client.auth.signInWithPassword({email:'user2@test.invalid',password:'Test-
 response=await post({operation:'update',workspace_id:id,name:'Cross workspace',description:''});assert.equal(response.status,403);
 response=await work({operation:'issue_create',title:'forbidden',status:'open',priority:'normal',labels:[]});assert.equal(response.status,403);
 response=await fetch(imageUrl,{headers:headers()});assert.equal(response.status,403);
+response=await fetch(flowUrl,{headers:headers()});assert.equal(response.status,403);
 page=await fetch(base+`/app/w/${id}`,{headers:headers()});assert.equal((await page.text()).includes(updatedName),false);
 response=await post({operation:'accept',token:invitation});assert.equal(response.status,200);
 page=await fetch(base+`/app/w/${id}`,{headers:headers()});assert.equal((await page.text()).includes(updatedName),true);
 response=await post({operation:'update',workspace_id:id,name:'Viewer write',description:''});assert.equal(response.status,403);
 response=await work({operation:'issue_create',title:'viewer forbidden',status:'open',priority:'normal',labels:[]});assert.equal(response.status,403);
 response=await wiki({operation:'create',title:'viewer forbidden',category:'FAQ',status:'published',body_doc:wikiDoc,related_ids:[]});assert.equal(response.status,403);
+assert.ok((await flow('search',{q:'HTTP Issue'})).nodes.some(n=>n.id===wikiId));response=await flowRelation('unlink');assert.equal(response.status,403);
 response=await fetch(imageUrl,{headers:headers()});assert.equal(response.status,200);response=await fetch(wikiUrl+'?'+new URLSearchParams({collection:'revision',id:wikiId,revision:'1'}),{headers:headers()});assert.equal(response.status,404);
 await client.auth.signOut();
 page=await fetch(base+'/app',{headers:headers(),redirect:'manual'});assert.equal(page.status,307);
 await client.auth.stopAutoRefresh();
-console.log('HTTP smoke passed: Phases 2/3 regression; Wiki CRUD/search/revisions/backlinks/rendering/XSS, private image upload/download, MIME validation, viewer/cross-workspace denial.');
+console.log('HTTP smoke passed: Phases 2/3/4 regression; Flow search, bounded graph, detail, neighbors, saved relations, source pages, SSR, validation, CSRF, viewer/cross-workspace denial.');
