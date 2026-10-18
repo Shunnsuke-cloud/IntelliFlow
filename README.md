@@ -1,300 +1,222 @@
 # IntelliFlow
 
-本番公開に向けた最新の確認結果と、DB・認証設定・デプロイを個別承認する手順は [本番公開手順](docs/production-launch.md) を参照してください。
+## 情報をつなぎ、次の人へ。
 
-## Phase 8: 公開前検証・準備
+課題、プロジェクト、知識、引き継ぎ情報をひとつにつなぐWebアプリケーションです。
+「何をするか」だけでなく、「なぜそうなったか」「次の担当者が何を知るべきか」までたどれることを目指しています。
 
-主要機能の隔離DB・API・Chrome E2E検証、Gemini実接続、既存Supabase/Vercelの読み取り調査を実施しました。**現時点の判定は本番公開不可**です。本番AuthのURL、未適用マイグレーション、検証環境の分離、バックアップ復元確認が残っています。
-修正ファイル・テスト結果・環境変数・公開/復旧手順は [Phase 8検証報告](docs/phase8.md) を参照してください。本番DB変更・設定変更・デプロイは行っていません。
+**公開URL：<https://intelli-flow-pi.vercel.app>**
 
-## Phase 7: AIアシスタント・検索・引き継ぎ支援
+個人開発の就職活動用ポートフォリオです。UIだけでなく、認証・認可、データの整合性、AIの利用制御、既存データを保護する移行とテストまでを開発対象にしています。
 
-Geminiによる権限付き検索と根拠リンク、Flow MapのAI質問、確認して反映するHandoff下書きを追加しました。AIはワークスペース/本人とも初期無効で、通常機能はAIなしで動作します。
-変更ファイル・マイグレーション・利用回数・無料枠のデータ取り扱い・テスト・公開前の作業は [Phase 7ガイド](docs/phase7.md) を参照してください。本番DB適用・デプロイは未実施です。
+> 公開サイトとリポジトリの最新コードは、デプロイ時期によって表示が異なる場合があります。LP・ログイン・新規登録画面のリニューアルはローカルで検証済みです。最新UIの確認方法は[こちら](docs/lp-auth-renewal.md)を参照してください。
 
-## Phase 6: Handoff
+## 開発の背景
 
-Issue/Projectからの候補作成、手動の引き継ぎ編集・送信、受領・完了、版ごとのスナップショット・受領履歴、改訂後の再確認、Flow Map連携を追加しました。
-変更ファイル・権限・DB追加定義・検証範囲は [Phase 6ガイド](docs/phase6.md) を参照してください。本番DBへの適用・デプロイは未実施です。Phase 6時点ではAI生成はありません。現在のAI支援は上記Phase 7を参照してください。
+資料やタスクを保存しても、その背景や関連資料まで共有できていなければ、担当者が変わるたびに情報を探し直すことになります。
 
-## Phase 5: Flow Map
+- 前任者しか作業の経緯を知らない。
+- 過去に似た問題が起きていても、資料が見つからない。
+- 引き継ぎ資料を読んでも、未完了の作業や次の行動が分からない。
 
-過去のIssue・Project・Wikiの検索、種類/更新日/Projectの絞り込み、関連マップ、段階的な探索、元ページへの移動、関連付けの保存・解除を追加しました。
-変更ファイル・権限・DB追加定義・検証結果は [Phase 5ガイド](docs/phase5.md) を参照してください。本番DBへの適用・デプロイは未実施です。Phase 5時点ではAIとHandoffの新規実装はありません。Handoffの現在の状態は上記Phase 6を参照してください。
+IntelliFlowでは、情報を**関連付けて探すFlow Map**と、必要な背景を**確認して渡すHandoff**を組み合わせ、この断絶を減らす設計にしました。会社だけでなく、学校・サークル・個人の活動でも使えるよう、日本語の説明とシンプルな操作を重視しています。
 
-## Phase 4: Wiki
+## まず見てほしい体験
 
-文章エディタ、ページ階層、検索・カテゴリ、画像添付、更新履歴・過去版表示、Issues / ProjectsとのIDによる関連付けを追加しました。
-変更ファイル・権限・DB / Storage設定・検証結果は [Phase 4ガイド](docs/phase4.md) を参照してください。本番DBへの適用・デプロイは未実施です。Phase 4時点ではFlow Map / Handoff / AIの新規実装はありません。Flow Mapの現在の状態は上記Phase 5を参照してください。
+イベント運営を例にすると、次の流れで利用できます。
 
-## Phase 3: Issues / Projects
+1. **Issue（課題）**に「イベント準備の進捗が分からない」を登録する。
+2. **Wiki**の「イベント運営マニュアル」と、対象の**Project**を関連付ける。
+3. **Flow Map**で検索し、課題・資料・プロジェクトのつながりから経緯を確認する。
+4. **Handoff**に現在の状況、残った作業、注意事項、関連資料をまとめる。
+5. 次の担当者が内容を確認して受領し、引き継いだ版と日時を記録する。
 
-Issue（課題）のCRUD・担当/期限/状態/ラベル・コメント・関連付け・検索・履歴と、ProjectsのCRUD・メンバー/日程・実課題に基づく進捗・一覧/カンバンを追加しました。
-設定・権限・変更ファイル・マイグレーションは [Phase 3ガイド](docs/phase3.md) を参照してください。削除は復元可能なアーカイブです。本番DBへの適用・デプロイは未実施です。
-Phase 3時点ではWiki / Flow Map / Handoff / AIの新規実装はありません。Wikiの現在の状態は上記Phase 4を参照してください。
-
-## Phase 2: 認証・ワークスペース基盤
-
-新しいコンセプトは **IntelliFlow — 情報をつなぎ、次の人へ。** です。
-認証、個人/チーム用ワークスペース、招待と4段階の権限、共通UIを追加しました。
-Phase 2時点ではIssues / Projects / Wiki / Flow Map / Handoffの業務機能は準備中です。現在の状態は上記Phase 3・4を参照してください。
-
-**現在の設定・DB適用手順は [Phase 2実装・検証・設定ガイド](docs/phase2.md) を参照してください。**
-下記の旧説明は試作時の記録です。特に旧002マイグレーションの再実行、公開スキーマへのバックアップコピー、所有者の一括割当、旧Gemini仕様はそのまま使用しないでください。本番DBへの適用・デプロイは個別の承認後に行います。
-
-```bash
-npm ci
-npm test
-npm run lint
-npm run typecheck
-npm run build
+```mermaid
+flowchart LR
+  I[Issue：課題・対応の経緯] --- P[Project：活動のまとまり]
+  I --- W[Wiki：手順・知識]
+  P --- F[Flow Mapで検索・探索]
+  W --- F
+  I --- F
+  F --> H[Handoff：状況・未完了作業・関連資料]
+  H --> N[次の担当者が確認・受領]
 ```
 
-テストはNode.js 22.15以降を使用し、実DB・実ユーザー・外部AIへ接続しません。
-
----
-
-以下は旧コンセプトと試作の説明です。
-
-IntelliFlowは、中小企業や飲食店などの小規模事業者向けに、散在した業務情報をAIで整理・要約・構造化し、業務の流れ（Flow）を最適化する業務支援プラットフォームです。
-
-会議メモ、チャット、業務指示などの非構造データをAIが自動で整理し、「やるべきこと」と「意思決定」を明確にすることで、業務効率化とDX推進を支援します。
-
-## 開発背景
-
-中小企業では、情報がLINE・メール・紙・Excelなどに分散しやすく、会議内容が記録されないままタスクが曖昧になることがよくあります。引き継ぎの属人化や、ITツールの複雑さによる定着不足も、業務改善を妨げる大きな要因です。
-
-IntelliFlowは、こうした「情報はあるのに活用できない状態」をAIで解消し、情報を流れるように整理する仕組みを提供します。
-
-## Supabase setup (recommended)
-
-1. Rotate Service Role Key
-
-- If you exposed the `SUPABASE_SERVICE_ROLE_KEY`, rotate it immediately in the Supabase Project Settings -> API -> Service Role Key.
-
-2. Run SQL migration
-
-- Open Supabase Console -> SQL Editor and run the migration file `supabase-migrations/001_create_notes_and_policies.sql`.
-
-3. Environment
-
-- Keep sensitive keys out of the repository. Store `SUPABASE_SERVICE_ROLE_KEY` locally only in `.env.local` (which is already gitignored).
-
-## 解決する課題
-
-### 課題1: 情報の分散
-
-複数ツールに情報が散らばり、検索性が低い。
-
-### 課題2: 会議内容の未活用
-
-議事録が作られず、決定事項が曖昧になる。
-
-解決: AIによる要約、タスク抽出、決定事項整理。
-
-### 課題3: タスク管理の属人化
-
-誰が何をやるか不明確になる。
-
-解決: AIが責任者・期限付きでタスク化。
-
-### 課題4: ITツールの複雑さ
-
-高機能ツールが現場に定着しない。
-
-解決: シンプルUIと自然言語入力中心設計。
-
-## ターゲットユーザー
-
-### メインターゲット
-
-- 中小企業
-- 小規模事業者
-- 飲食店
-- スタートアップチーム
-
-### 想定ユーザー像
-
-- 飲食店オーナー: 口頭指示が多く、メモ管理が苦手。シフトや在庫管理に課題がある。
-- 中小企業管理者: 会議が多く、情報共有が分散しやすい。DXを進めたいが人材不足。
-- 小規模チーム: SlackやLINE中心で運用しており、タスクが流れやすい。
+最新LPには、この流れを**ログインせずに試せる5段階のミニデモ**を用意しています。Heroのグラフもノードをクリックして操作できます。どちらも架空の固定データを使い、SupabaseやGemini APIには接続しません。
 
 ## 主な機能
 
-### 1. AIノート整理
+| 機能 | できること |
+| --- | --- |
+| 認証・ワークスペース | メール・パスワード／Google／メールリンク認証、ワークスペース作成・切り替え、招待、Owner・Admin・Member・Viewerの権限管理 |
+| Issues | 課題の作成・編集・アーカイブ、ワークスペース内の一意な番号、担当者・期限・優先度・状態・ラベル、コメント、関連課題、検索・絞り込み・更新履歴 |
+| Projects | メンバー・日程・関連課題の管理、実際の課題から計算した進捗、一覧・カンバン表示 |
+| Wiki | リッチテキスト編集、画像添付、ページ階層・カテゴリ・検索、過去バージョン、Issue・Projectとの相互参照 |
+| Flow Map | タイトル・本文の検索、種類・更新日・Projectの絞り込み、関連ノードの段階的な取得、詳細表示、元ページへの移動 |
+| Handoff | Issue・Projectから候補を取得、下書き・送信・受領・完了、送信時のスナップショット、版ごとの受領履歴、改訂後の再確認 |
+| AI支援 | 登録情報に基づく根拠付きチャット、Flow MapのAI質問、確認して反映するHandoff下書き |
+| 共通UI | レスポンシブなナビゲーション、アプリ内のライト／ダークモード、ローディング・エラー・空状態 |
 
-入力された文章をAIが自動で構造化し、要約、重要ポイント、決定事項を整理します。
+Handoffの「送信」はアプリ内での共有と状態更新です。メール通知の機能ではありません。AIを無効にしても、通常の課題管理・検索・引き継ぎは利用できます。
 
-### 2. AIタスク生成
+## 設計と実装の見どころ
 
-文章からタスクを自動抽出し、責任者や期限付きのタスクに変換します。
+### 1. グラフを「過去の情報を探す道具」にする
 
-例: 「来週までに在庫確認とSNS投稿」
+Flow Mapは装飾的な全件グラフではなく、検索結果と直接関連する情報から探索を始めます。関連情報は必要に応じて追加取得し、初期表示と通信量を制限します。
 
-- 在庫確認（期限: 来週）
-- SNS投稿（期限: 来週）
+課題・資料をグラフ用に複製せず、既存レコードのIDと関連付けを利用します。日本語の検索にはPostgreSQLの部分一致とtrigramインデックスを使い、別のグラフDBやベクトルDBを追加せずに構成しました。
 
-### 3. Flowビュー
+実装：[Flow Map UI](features/flow/components/FlowExplorer.tsx)／[描画](features/flow/components/FlowCanvas.tsx)／[検索・関連取得](lib/flow.ts)
 
-情報を「流れ」として可視化し、インプット、処理、アウトプットの関係を直感的に把握できます。
+### 2. 「最新の情報」と「引き継いだ時点」を分ける
 
-### 4. AI検索
+元のIssueやWikiが更新されても、何を渡し、どの内容に対して受領したかを確認できるようにしています。
 
-自然言語で過去データを検索できます。
+- 送信時にDB側で関連資料を取得し、内容のスナップショットを作成。
+- 元ページへのリンクと送信当時の記録を分けて表示。
+- 受領者・日時・内容の版を保存し、重要な変更は新しい版として再確認を依頼。
+- 受領・完了は指定された受取人だけが実行可能。
 
-例:
+実装：[Handoff UI](features/handoffs/components/HandoffUI.tsx)／[データアクセス](lib/handoffs.ts)／[バージョン・受領のDB定義](supabase/migrations/20261017113749_phase6_handoff.sql)
 
-- 先週の会議内容
-- SNSの方針
+### 3. 画面・API・DBで権限を守る
 
-### 5. プロジェクト管理
+サーバーで本人確認とワークスペースの所属・役割を検証し、PostgreSQLのRLSでもアクセス境界を守ります。通常のユーザー操作にService Role Keyを使用しません。
 
-- 店舗別
-- チーム別
-- 案件別
+関連先・担当者・グラフの両端が同一ワークスペースであることもDBで検証します。Wikiは許可した文書構造を検証して表示し、画像は非公開Storageと権限確認を通して取得します。
 
-で情報を整理できます。
+実装：[認証・認可](lib/auth/server.ts)／[安全な遷移先の検証](lib/auth/policy.ts)／[Wiki文書の検証・表示](features/wiki/document.ts)／[マイグレーション](supabase/migrations)
 
-## サービスの特徴
+### 4. AIを、根拠を確認できる補助機能にする
 
-- AIで業務を流れ化し、単なるメモ管理にとどめない
-- 非IT企業でも使いやすい、直感的でシンプルなUI
-- 自然言語や音声入力を中心にした操作設計
-- 既存業務を大きく変えずに導入しやすい
+AIは明示的な操作時だけ呼び出します。通常の画面表示・保存・検索では呼び出しません。
+
+```text
+質問 → 本人・所属・AI設定・同意の確認
+     → PostgreSQLで検索 → 閲覧可能な少数の資料へ絞り込み
+     → DBで利用回数を予約 → サーバーからGeminiへ送信
+     → 構造化出力・根拠ID・権限の再検証 → 回答と元ページへのリンク
+```
+
+- 資料は最大8件、各本文は最大1,200文字、資料コンテキストは最大12,000文字に制限。
+- 根拠リンクはAIが返したURLを使わず、検証したレコードIDからアプリが生成。
+- 資料中の命令をシステム指示として扱わず、出力は実行時のスキーマ検証を実施。
+- Handoff下書きはプレビュー後に人が反映・保存。AIによる受領や課題の完了処理は行わない。
+- 初期上限はユーザー1日10回・ワークスペース1日50回。DBのトランザクションとロックで同時要求を制御。
+- APIキー・質問全文・資料本文・生成本文を利用ログに保存せず、権限の異なるユーザー間で回答を共有キャッシュしない。
+
+AIはワークスペース・利用者とも初期無効です。利用者が外部送信を判断できるよう、有効化と送信同意を設けています。アプリの回数上限はGoogle側の利用制限とは別で、無料利用や応答の正確性を保証するものではありません。
+
+実装：[AI API](app/api/gemini/route.ts)／[RAG・データ取得](lib/ai.ts)／[出力検証](features/ai/validation.ts)／[モデル・上限の一元管理](features/ai/config.ts)
+
+### 5. 操作を通して価値が伝わるフロントエンド
+
+LPはノード選択による関連表示、Before/After比較、機能タブ、段階的な体験デモをReactの状態で制御します。Motion・CSS・SVGを使い分け、マウス連動にはMotionValueを使用して、毎フレームのReact再レンダリングを避けています。
+
+スクロール出現、接続線の光、フォームのフォーカス表示に加え、キーボード操作・モバイル表示・`prefers-reduced-motion`に対応。デモと実データを明確に区別し、認証画面は既存のcallbackを維持した共通レイアウトにしています。
+
+実装：[LP](app/components/marketing/Landing.tsx)／[インタラクティブグラフ](app/components/marketing/FlowGraph.tsx)／[認証UI](app/components/SupabaseAuth.tsx)
 
 ## 技術スタック
 
-| 分野 | 技術 |
+| 領域 | 採用技術 | 採用理由・用途 |
+| --- | --- | --- |
+| アプリ基盤 | Next.js App Router・React・TypeScript | サーバーでの認証・データ取得と、操作に応じるクライアントUIを分離 |
+| UI | CSS・Motion・SVG | 既存UIと統一しながら、レスポンシブ表示と軽量なインタラクションを実装 |
+| グラフ | React Flow（`@xyflow/react`） | 業務画面のノード選択・移動・ズーム・関連探索 |
+| エディタ | Tiptap | Markdownを知らなくても使えるWiki編集 |
+| 認証・DB・画像 | Supabase Auth・PostgreSQL・Storage | セッション、RLS、関連制約、トランザクション、添付の権限制御 |
+| AI | Gemini API（サーバー側REST） | 検索結果に基づく回答と構造化された下書き。既存のfetch実装を再利用 |
+| テスト | Node.js Test Runner・PGlite・実PostgreSQL・Playwright | ドメイン処理・SQL・権限・HTTP・ブラウザを段階的に検証 |
+| 公開 | Vercel | 既存プロジェクトとGit連携を利用 |
+
+依存関係・実行コマンドの正本は[package.json](package.json)です。
+
+## 構成
+
+```text
+app/
+  page.tsx                  # LP
+  login/・signup/           # 認証画面
+  app/w/[workspaceId]/      # ワークスペース内の各画面
+  api/                      # 本人確認・入力検証を行うAPI Routes
+  components/marketing/     # LP・認証のブランドUI
+components/                 # アプリシェル・共通UI
+features/                   # 機能別のUI・型・入力検証・スタイル
+lib/                        # 認証・Supabase・機能別データアクセス
+supabase/migrations/        # バージョン管理した7本の追加マイグレーション
+tests/                      # 単体・DB・HTTP・ブラウザ検証、隔離fixture
+docs/                       # 設計・実装・検証・公開手順
+```
+
+## ローカル起動
+
+Node.js 22.15以降とnpm、マイグレーション適用済みの**開発用Supabase**を用意してください。
+
+```bash
+git clone https://github.com/Shunnsuke-cloud/IntelliFlow.git
+cd IntelliFlow
+npm ci
+```
+
+`.env.local`に以下の項目を設定します。既存ファイルがある場合は上書きせず、設定済みの値を維持してください。
+
+| 環境変数 | 用途 |
 | --- | --- |
-| フロントエンド | Next.js / React |
-| UI | Tailwind CSS |
-| バックエンド | Firebase / Supabase |
-| DB | Firestore / PostgreSQL |
-| AI | Gemini API |
-| 認証 | Google Authentication |
-| デプロイ | Vercel |
+| `NEXT_PUBLIC_SUPABASE_URL` | 開発用SupabaseのURL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 公開可能なanon／publishableキー |
+| `GEMINI_API_KEY` | AI利用時のみ必要なサーバー用キー |
+| `GEMINI_MODEL` | 現在の実装で検証対象としているモデルID：`gemini-3.8-flash` |
+| `SUPABASE_URL`・`SUPABASE_ANON_KEY` | 任意。サーバー側の接続設定。未指定なら上記の公開用設定を利用 |
 
-## Vercel へのデプロイ
+ブラウザとサーバーのSupabase接続先は同じ開発プロジェクトに揃えます。Service Role Keyは通常機能に不要です。AIのキーが未設定でも、AI以外の基本機能は利用できます。
 
-このリポジトリは Next.js なので、Vercel にそのままデプロイできます。新しいプロジェクトを別途作る必要はありません。GitHub 連携済みなら、Vercel 側でこのリポジトリを Import するだけです。
-
-### 手順
-
-1. Vercel Dashboard を開き、`Add New` -> `Project` を選びます。
-2. GitHub 連携済みのこのリポジトリ `IntelliFlow` を Import します。
-3. Framework は自動で `Next.js` になります。Build Command や Output Directory は基本的に自動設定のままで大丈
-夫です。
-4. 環境変数を Vercel の Project Settings -> Environment Variables に追加します。
-
-### 必要な環境変数
-
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `GEMINI_API_KEY`
-
-サーバー側で privileged な処理をする場合のみ追加:
-
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `SUPABASE_NOTES_TABLE`
-
-### Supabase / Google OAuth の追加設定
-
-Vercel の本番 URL が決まったら、Supabase Dashboard の Authentication -> URL Configuration で以下を追加してください。
-
-- Site URL: `https://<your-vercel-project>.vercel.app`
-- Redirect URLs: `https://<your-vercel-project>.vercel.app`
-- Redirect URLs: `https://<your-vercel-project>.vercel.app/app`
-
-Google OAuth を使う場合は、Google Cloud Console 側にも Supabase の callback を登録してください。
-
-- `https://pocjzzekfupjqcwdfkan.supabase.co/auth/v1/callback`
-
-### ローカル確認
-
-デプロイ前にローカルで確認する場合は:
+Supabase Authには開発URLと`http://localhost:3000/auth/callback`を許可し、Google認証を使う場合はProvider設定も用意します。DBは既存のテーブル・履歴を確認してからマイグレーションを適用してください。旧`supabase-migrations/`や管理用スクリプトを、通常の起動手順として実行する必要はありません。
 
 ```bash
-npm run build
 npm run dev
+# http://localhost:3000
 ```
 
-### 補足
+実サービスを使わずに認証UIや主要機能を試す場合は、[隔離したローカル環境の手順](docs/lp-auth-renewal.md)を使用できます。
 
-- Vercel にも `.env.local` は持ち込まれないので、必ず Project Settings で環境変数を登録してください。
-- `NEXT_PUBLIC_*` はブラウザに公開されるため、公開してよい値だけを入れてください。
-- Service Role Key は Vercel に入れる場合でも必要最小限の用途に限定してください。
-
-## Backfill と NOT NULL 適用（本番手順）
-
-`owner = auth.uid()` ベースの厳格な RLS を適用する前に、安全なバックフィルと確認を行ってください。
-
-手順（要約）:
-
-1. Supabase のバックアップまたはテーブルコピーを作成します。
-
-```sql
-create table if not exists public.notes_backup as table public.notes;
-```
-
-2. ステージングで `supabase-migrations/002_add_owner_and_strict_rls.sql` を適用して動作検証してください。
-
-3. 本番で既存行を一括で管理者 UID にバックフィルするには、`scripts/backfill_owner.js` を使用します。
-
-環境変数を設定し、まずはドライランで確認します:
+## 品質確認とテスト
 
 ```bash
-SUPABASE_URL="https://your-project.supabase.co" \
-SUPABASE_SERVICE_ROLE_KEY="<service_role_key>" \
-ADMIN_UID="<ADMIN_UID_TO_ASSIGN>" \
-node scripts/backfill_owner.js --dry-run
+npm run lint
+npm run typecheck
+npm test
+npm run build
 ```
 
-実行する場合（注意: --yes が必要）:
+直近のLP・認証UIリニューアル時には、上記4項目と**95件のテスト**が成功しました。以下はその実装変更時の検証範囲です。
 
-```bash
-SUPABASE_URL="https://your-project.supabase.co" \
-SUPABASE_SERVICE_ROLE_KEY="<service_role_key>" \
-ADMIN_UID="<ADMIN_UID_TO_ASSIGN>" \
-node scripts/backfill_owner.js --yes
-```
+| 検証層 | 主な確認内容 |
+| --- | --- |
+| 単体・DBテスト | 入力検証、CRUD、更新競合、履歴、各役割の権限、別ワークスペースへのアクセス拒否、AI出力・利用制限 |
+| HTTP統合 | 実際のNext.js APIに対する認証・認可・エラー応答。AuthとGoogle応答は隔離fixtureを使用 |
+| 実PostgreSQL | マイグレーション、RLS、別接続からの同時予約、架空データのdump／restore。WindowsのローカルPostgreSQLを使う別実行の検証 |
+| アプリのブラウザE2E | ログイン・ログアウト、ワークスペース作成、主要7画面、テーマ・モバイル、Flow検索、AI支援、Handoff保存 |
+| LP・認証UIのブラウザ検証 | ノード・タブのキーボード操作、5段階デモ、CTA、登録・エラー・送信中表示、320〜1440pxの5段階でのノード重なり確認、reduced-motion |
 
-NOT NULL に変更する場合は慎重に検証した上で `--set-not-null` を付けて実行するか、SQL エディタで直接実行してください。
+`npm test`は本番DB・実ユーザー・外部AIに接続しません。ブラウザテストと実PostgreSQL検証は別途実行する構成です。Playwrightは一時的な実行ツールとして使い、アプリの依存関係には追加していません。
 
-注意:
-- `scripts/backfill_owner.js` はサービスロールキーを使用します。キーは安全に管理してください。
-- 本番適用前に必ずバックアップを取得し、保守時間内に実行してください。
+Google認証の開始リクエストとメールリンクのパラメータは検証していますが、直近のUI検証で**実Google認証の完了・実メール配信・スマートフォン実機**まで確認したものではありません。
 
-Gemini (Generative Language) API 統合
------------------------------------
+## 現時点の制約と改善余地
 
-サーバー側で Gemini（例: Google Generative Language API / text-bison-001）を呼び出すエンドポイントを用意しました。APIキーは環境変数 `GEMINI_API_KEY` に設定し、決してリポジトリにコミットしないでください。
+- AI検索はキーワード・部分一致を基礎とし、意味検索ではありません。長文の省略部分や全履歴まで網羅した回答は行いません。
+- Handoffの関連資料スナップショットは本文抜粋で、添付ファイルの完全な複製ではありません。
+- AIの会話表示はパネル内のメモリに保持し、永続的なチャット履歴は保存しません。
+- ブラウザE2EにはWindowsのChromeパスなど環境依存の設定があり、別環境では調整が必要です。
 
-使用方法（ローカル）:
+## 設計・検証資料
 
-1. `.env.local` に以下を追加（例）:
+- [初期調査](docs/renewal/01-investigation.md)／[設計](docs/renewal/02-design.md)／[開発工程](docs/renewal/03-roadmap.md)：開発の出発点と判断の背景。
+- [Handoffの仕様](docs/phase6.md)／[AI・RAG・利用回数制御](docs/phase7.md)：権限・データ構造・検証方法の詳細。
+- [公開前検証](docs/phase8.md)／[公開・復旧手順](docs/production-launch.md)：当時の監査と作業計画。記載された未適用・未公開の判定は作成時点の履歴であり、現在の本番状態を示すものではありません。
+- [LP・認証UIと隔離テスト](docs/lp-auth-renewal.md)：最新UIの実装範囲と再現方法。
+- [AGENTS.md](AGENTS.md)：既存データ・秘密情報・権限を守る共通開発ルール。
 
-```
-GEMINI_API_KEY="your_gemini_api_key_here"
-```
-
-2. サーバー側エンドポイントに POST でプロンプトを送信します（サーバー実装は `app/api/gemini/route.ts`）:
-
-```bash
-curl -X POST http://localhost:3000/api/gemini \
-	-H "Content-Type: application/json" \
-	-d '{"prompt":"今週やるべきタスクを3つ挙げて"}'
-```
-
-レスポンス例:
-
-```json
-{ "text": "1. ...\n2. ...\n3. ..." }
-```
-
-注意:
-- APIキーはサーバー側でのみ使用してください。フロントエンドに直接公開しないでください。`app/api/gemini/route.ts` はサーバー経由のプロキシとして動作します。 
-- 利用量や料金、APIの利用制限には注意してください。キーが漏れた場合は直ちにローテーションしてください。
-
-
+本番DBの変更、Auth設定、Productionへのデプロイは、対象と影響を確認したうえで個別に承認して進める運用です。READMEの起動手順で本番DBをリセットしたり、テストデータを投入したりしないでください。
