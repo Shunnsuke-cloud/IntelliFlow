@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { serverSupabase } from '../supabase/server';
 import { sameOrigin, validatedUser } from './policy';
 import { NextResponse } from 'next/server';
+import { BodyError, readJsonBody } from './body';
 export class HttpError extends Error { constructor(public status: number, message: string) { super(message); } }
 export async function requirePageUser() {
   const client = await serverSupabase();
@@ -20,13 +21,8 @@ export async function requireApiUser(req: Request) {
   return { client, user };
 }
 export async function readBody(req: Request): Promise<Record<string, unknown>> {
-  const raw = await req.text();
-  if (raw.length > 24000) throw new HttpError(413, '入力が長すぎます。');
-  try {
-    const value: unknown = JSON.parse(raw);
-    if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error();
-    return value as Record<string, unknown>;
-  } catch { throw new HttpError(400, '入力形式を確認してください。'); }
+  try { return await readJsonBody(req); }
+  catch (error) { if (error instanceof BodyError) throw new HttpError(error.status, error.message); throw error; }
 }
 export function textField(value: unknown, max: number, required = true) {
   if (typeof value !== 'string' || value.length > max || (required && !value.trim())) throw new HttpError(400, '入力内容・文字数を確認してください。');

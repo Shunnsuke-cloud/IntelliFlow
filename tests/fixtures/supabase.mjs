@@ -42,9 +42,14 @@ export async function startFixture(port = 0) {
       const chunks=[];for await(const chunk of req)chunks.push(chunk);const raw=Buffer.concat(chunks);
       const body=raw.length && !url.pathname.startsWith('/storage/')?JSON.parse(raw.toString('utf8')):{};
       const access=req.headers.authorization?.replace(/^Bearer /,''); const user=sessions.get(access);
+      if(url.pathname==='/auth/v1/signup'){
+        if(typeof body.email!=='string'||!body.email.endsWith('@test.invalid')||typeof body.password!=='string'||body.password.length<8||users.some(u=>u.email===body.email))return send(400,{msg:'Test signup rejected'});
+        const created={id:randomUUID(),email:body.email,aud:'authenticated',role:'authenticated',email_confirmed_at:null,app_metadata:{provider:'email'},user_metadata:body.data??{},created_at:new Date().toISOString()};
+        users.push(created);await db.query('insert into auth.users values($1,$2,$3,$4)',[created.id,created.email,null,JSON.stringify(created.user_metadata)]);return send(200,{user:created,session:null});
+      }
       if(url.pathname==='/auth/v1/token'){
         const found=url.searchParams.get('grant_type')==='refresh_token'?refreshes.get(body.refresh_token):body.password==='Test-password-123'?users.find(u=>u.email===body.email):null;
-        return found?send(200,session(found)):send(400,{error:'invalid_grant',error_code:'invalid_credentials',msg:'Invalid login credentials'});
+        return found?.email_confirmed_at?send(200,session(found)):send(400,{error:'invalid_grant',error_code:'invalid_credentials',msg:'Invalid login credentials'});
       }
       if(url.pathname==='/auth/v1/user')return user?send(200,user):send(401,{msg:'Invalid token'});
       if(url.pathname==='/auth/v1/logout'){
@@ -104,7 +109,7 @@ export async function startFixture(port = 0) {
     }).catch(()=>{if(!res.writableEnded){res.writeHead(500);res.end('{}');}});
   });
   await new Promise(resolve=>server.listen(port,'127.0.0.1',resolve));
-  return {url:`http://127.0.0.1:${server.address().port}`,close:async()=>{await new Promise(resolve=>server.close(resolve));await db.close();}};
+  return {url:`http://127.0.0.1:${server.address().port}`,confirmUser:async id=>{const user=users.find(u=>u.id===id);if(!user)throw new Error('Test user missing');user.email_confirmed_at=new Date().toISOString();await db.query('update auth.users set email_confirmed_at=$1 where id=$2',[user.email_confirmed_at,id]);},close:async()=>{await new Promise(resolve=>server.close(resolve));await db.close();}};
 }
 if(process.argv[1] && import.meta.url===pathToFileURL(process.argv[1]).href){
   const fixture=await startFixture(4400);console.log('Local test fixture ready: '+fixture.url+' (PID '+process.pid+')');

@@ -1,0 +1,33 @@
+{
+  "project_ref": "pocjzzekfupjqcwdfkan",
+  "migrations": [
+    {
+      "file": "supabase/migrations/20261017072651_phase2_workspaces.sql",
+      "sha256": "6574cac2e2cfc751f30f52b7f30cdec60257bd231364b817afa13943266fd924"
+    },
+    {
+      "file": "supabase/migrations/20261017080005_phase3_issues_projects.sql",
+      "sha256": "a6405990b1c2f6418c58340ce60e4b382feaaf09a800c22c03fdeaf5e4e6a91a"
+    },
+    {
+      "file": "supabase/migrations/20261017083402_phase4_wiki.sql",
+      "sha256": "e5c914c6776686bb82aa13ff75716c09530b00fb7b6d01d7cca7353234a14a85"
+    },
+    {
+      "file": "supabase/migrations/20261017105423_phase5_flow_map.sql",
+      "sha256": "bda8613465be9253c3daa893835b7dd933c816d12573e56a830b41fcf8b2fb09"
+    },
+    {
+      "file": "supabase/migrations/20261017113749_phase6_handoff.sql",
+      "sha256": "c56122d94a955997f2c7a7f1980aaa6e3c7b4dca3edbb849d268fba2cab45f70"
+    },
+    {
+      "file": "supabase/migrations/20261017124130_phase7_ai_assistant.sql",
+      "sha256": "8054eec8d6fd2312306b045ef9bfd0bb7e2156702d4c38a89b882a3c582a6207"
+    },
+    {
+      "file": "supabase/migrations/20261017134159_phase8_release_hardening.sql",
+      "sha256": "1528764ba0ace5492692efc6f8c91d80ba274d9f5fee10988904eaf94e8f5096"
+    }
+  ]
+}
