@@ -11,7 +11,7 @@ import '../features/ai/ai.css';
 export const metadata: Metadata = {
   title: "IntelliFlow",
   description:
-    "AIで散在した業務情報を整理・要約・構造化し、業務の流れを最適化する業務支援プラットフォームです。",
+    "IntelliFlow — 情報をつなぎ、次の人へ。課題管理・情報共有・引き継ぎを支えるWebアプリケーション。",
 };
 
 export default function RootLayout({
